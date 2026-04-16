@@ -1,0 +1,1 @@
+web: gunicorn E_Commence.wsgi:application
