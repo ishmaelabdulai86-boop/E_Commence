@@ -1,0 +1,746 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - TechStore{% endblock %}
+
+{% block content %}
+<!-- Top Breadcrumb Navigation -->
+<div class="breadcrumb-section" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); padding: 20px 0; border-bottom: 1px solid rgba(102, 126, 234, 0.15);">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0" style="background: none; padding: 0;">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" style="color: #667eea; text-decoration: none; font-weight: 600;">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'products:product_list_by_category' product.category.slug %}" style="color: #667eea; text-decoration: none; font-weight: 600;">{{ product.category.name }}</a></li>
+                <li class="breadcrumb-item active" style="color: #9ca3af; font-weight: 500;">{{ product.name|truncatechars:40 }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Product Images -->
+        <div class="col-lg-6">
+            <div class="product-gallery-container" style="border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15); background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid rgba(102, 126, 234, 0.1);">
+                <div class="product-image-main" style="position: relative; width: 100%; overflow: hidden; background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); display: flex; align-items: center; justify-content: center; min-height: 500px;">
+                    {% with primary_image=product.images.first %}
+                    <img id="mainImage" src="{% if primary_image %}{{ primary_image.image.url }}{% else %}https://via.placeholder.com/500{% endif %}" alt="{{ product.name }}" class="img-fluid" style="max-height: 500px; object-fit: contain; width: 100%; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: zoom-in;">
+                    {% endwith %}
+                    {% if product.discount_percentage %}
+                    <div style="position: absolute; top: 20px; right: 20px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 14px 18px; border-radius: 14px; font-weight: 700; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35); font-size: 0.9rem; animation: pulse-discount 2s infinite;">
+                        −{{ product.discount_percentage }}%
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Thumbnail Gallery -->
+                <div class="product-thumbnails" style="display: flex; gap: 10px; padding: 18px; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); overflow-x: auto; border-top: 1px solid rgba(102, 126, 234, 0.1);">
+                    {% for image in product.images.all %}
+                    <div class="thumbnail-item" data-image-src="{{ image.image.url }}" style="flex-shrink: 0; cursor: pointer; transition: all 0.3s ease;">
+                        <img src="{{ image.image.url }}" alt="" class="img-fluid rounded" style="width: 85px; height: 85px; object-fit: cover; border: 2.5px solid {% if forloop.first %}#667eea{% else %}rgba(102, 126, 234, 0.2){% endif %}; border-radius: 10px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); opacity: {% if forloop.first %}1{% else %}0.65{% endif %}; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                    </div>
+                    {% empty %}
+                    <div class="thumbnail-item" style="flex-shrink: 0; text-align: center; padding: 15px;">
+                        <div style="width: 85px; height: 85px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);">
+                            <i class="fas fa-image" style="color: #d1d5db; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Details -->
+        <div class="col-lg-6">
+            <div style="padding: 0;">
+                <h1 class="h2" style="font-size: 2.2rem; font-weight: 800; color: #1f2937; margin-bottom: 18px; line-height: 1.15;">{{ product.name }}</h1>
+                
+                <div class="rating-section mb-4" style="display: flex; align-items: center; gap: 16px; padding: 16px 18px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.05) 100%); border-radius: 14px; border: 1px solid rgba(245, 158, 11, 0.15);">
+                    <div class="rating-stars" style="font-size: 1.3rem; color: #f59e0b; gap: 6px; display: flex;">
+                        {% for i in "12345" %}
+                        {% if forloop.counter <= product.average_rating %}
+                        <i class="fas fa-star"></i>
+                        {% else %}
+                        <i class="far fa-star"></i>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <span style="font-weight: 700; color: #92400e; font-size: 0.95rem;">{{ product.average_rating|floatformat:1 }}/5.0</span>
+                        <span style="color: #b45309; font-size: 0.85rem;">({{ product.review_count }} reviews)</span>
+                    </div>
+                </div>
+                
+                <!-- Price Section -->
+                <div class="price-section mb-4" style="padding: 24px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%); border-radius: 16px; border: 2px solid rgba(102, 126, 234, 0.2);">
+                    {% if product.discount_price %}
+                    <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;">
+                        <span class="h2" style="color: #667eea; font-weight: 800; margin: 0; font-size: 2.4rem;">${{ product.discount_price }}</span>
+                        <span style="font-size: 1.3rem; text-decoration: line-through; color: #cbd5e1; font-weight: 500;">${{ product.price }}</span>
+                        <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.85rem;">Save {{ product.discount_percentage }}%</span>
+                    </div>
+                    {% else %}
+                    <span class="h2" style="color: #667eea; font-weight: 800; font-size: 2.4rem;">${{ product.price }}</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Product Description -->
+                <div style="margin-bottom: 28px;">
+                    <p style="color: #6b7280; font-size: 1.05rem; line-height: 1.7;">{{ product.description }}</p>
+                </div>
+                
+                <!-- Stock Status -->
+                <div class="stock-status mb-4" style="padding: 14px 18px; border-radius: 12px; {% if product.stock > 10 %}background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%); color: #047857; border: 1px solid rgba(16, 185, 129, 0.3);{% elif product.stock > 0 %}background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%); color: #92400e; border: 1px solid rgba(245, 158, 11, 0.3);{% else %}background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%); color: #b91c1c; border: 1px solid rgba(239, 68, 68, 0.3);{% endif %} font-weight: 600; display: flex; align-items: center; gap: 12px;">
+                    {% if product.stock > 0 %}
+                    <i class="fas fa-check-circle" style="font-size: 1.1rem;"></i>
+                    {% if product.stock > 10 %}
+                    <div><span style="font-weight: 700;">In Stock</span><br><span style="font-size: 0.85rem;">{{ product.stock }} available • Ships in 24h</span></div>
+                    {% else %}
+                    <div><span style="font-weight: 700;">Limited Stock</span><br><span style="font-size: 0.85rem;">Only {{ product.stock }} left • Order now!</span></div>
+                    {% endif %}
+                    {% else %}
+                    <i class="fas fa-times-circle" style="font-size: 1.1rem;"></i>
+                    <div><span style="font-weight: 700;">Out of Stock</span><br><span style="font-size: 0.85rem;">Check back soon</span></div>
+                    {% endif %}
+                </div>
+                
+                <!-- Quantity Selector -->
+                <div class="mb-6" style="margin-bottom: 28px;">
+                    <label style="font-weight: 700; color: #1f2937; display: block; margin-bottom: 12px;">Select Quantity</label>
+                    <div class="input-group" style="max-width: 160px;">
+                        <button class="btn quantity-btn" data-action="decrease" type="button" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%); border: 2px solid rgba(102, 126, 234, 0.3); color: #667eea; font-weight: 700; border-radius: 12px 0 0 12px; padding: 10px 14px;">−</button>
+                        <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="{{ product.stock }}" style="border: 2px solid rgba(102, 126, 234, 0.3); font-weight: 700; font-size: 1.1rem; border-radius: 0; color: #667eea; width: 70px;">
+                        <button class="btn quantity-btn" data-action="increase" type="button" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%); border: 2px solid rgba(102, 126, 234, 0.3); color: #667eea; font-weight: 700; border-radius: 0 12px 12px 0; padding: 10px 14px;">+</button>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons - Using built-in Django URL tags correctly -->
+                <div class="d-grid gap-3 mb-4">
+                    <button type="button" class="btn btn-add-to-cart" data-product-id="{{ product.id }}" {% if product.stock == 0 %}disabled{% endif %} style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 700; font-size: 1.05rem;">
+                        <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                    </button>
+                    <button type="button" class="btn btn-buy-now" data-product-id="{{ product.id }}" {% if product.stock == 0 %}disabled{% endif %} style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 18px; border-radius: 14px; font-weight: 700; font-size: 1.05rem;">
+                        <i class="fas fa-bolt me-2"></i>Buy Now
+                    </button>
+                    <button type="button" class="btn btn-add-wishlist" data-product-id="{{ product.id }}" style="background: white; border: 2.5px solid rgba(102, 126, 234, 0.3); color: #dc2626; padding: 18px; border-radius: 14px; font-weight: 700;">
+                        <i class="far fa-heart me-2"></i>Add to Wishlist
+                    </button>
+                </div>
+                
+                <!-- Trust Badges -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding-top: 24px; border-top: 1px solid rgba(102, 126, 234, 0.15);">
+                    <div style="text-align: center; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.04) 100%);">
+                        <div style="font-size: 1.8rem; color: #10b981; margin-bottom: 8px;"><i class="fas fa-shipping-fast"></i></div>
+                        <p style="font-size: 0.85rem; color: #6b7280; margin: 0; font-weight: 600;"><strong style="color: #047857;">Free Shipping</strong><br><span style="font-size: 0.8rem;">over $50</span></p>
+                    </div>
+                    <div style="text-align: center; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);">
+                        <div style="font-size: 1.8rem; color: #3b82f6; margin-bottom: 8px;"><i class="fas fa-lock"></i></div>
+                        <p style="font-size: 0.85rem; color: #6b7280; margin: 0; font-weight: 600;"><strong style="color: #1e40af;">Secure</strong><br><span style="font-size: 0.8rem;">100% safe</span></p>
+                    </div>
+                    <div style="text-align: center; padding: 12px; border-radius: 12px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.04) 100%);">
+                        <div style="font-size: 1.8rem; color: #f59e0b; margin-bottom: 8px;"><i class="fas fa-undo"></i></div>
+                        <p style="font-size: 0.85rem; color: #6b7280; margin: 0; font-weight: 600;"><strong style="color: #92400e;">30-Day Returns</strong><br><span style="font-size: 0.8rem;">free</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rest of your tabs and related products section remains the same -->
+    <!-- ... keep your existing tabs, reviews, and related products code here ... -->
+     <!-- Product Tabs - Modern -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card" style="border: 1px solid rgba(102, 126, 234, 0.15); border-radius: 18px; box-shadow: 0 10px 40px rgba(102, 126, 234, 0.08); overflow: hidden;">
+                <div class="card-body p-0">
+                    <ul class="nav nav-tabs" id="productTabs" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.04) 0%, rgba(118, 75, 162, 0.02) 100%); border-bottom: 2px solid rgba(102, 126, 234, 0.15); padding: 0; gap: 0;">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#descriptionTab" style="color: #6b7280; border: none; padding: 18px 24px; font-weight: 600; border-bottom: 3px solid transparent; transition: all 0.3s ease; position: relative;">Description</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#specificationsTab" style="color: #6b7280; border: none; padding: 18px 24px; font-weight: 600; border-bottom: 3px solid transparent; transition: all 0.3s ease; position: relative;">Specifications</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#reviewsTab" style="color: #6b7280; border: none; padding: 18px 24px; font-weight: 600; border-bottom: 3px solid transparent; transition: all 0.3s ease; position: relative;">
+                                Reviews <span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2); margin-left: 8px; font-size: 0.8rem; padding: 4px 8px;">{{ product.review_count }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#shippingTab" style="color: #6b7280; border: none; padding: 18px 24px; font-weight: 600; border-bottom: 3px solid transparent; transition: all 0.3s ease; position: relative;">Shipping & Returns</a>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-5" style="background: #ffffff;">
+                        <!-- Description Tab -->
+                        <div class="tab-pane fade show active" id="descriptionTab">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div style="color: #4b5563; line-height: 1.8; font-size: 1rem;">{{ product.full_description|safe|default:product.description }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card" style="border: 1px solid rgba(102, 126, 234, 0.15); border-radius: 14px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.08);">
+                                        <div class="card-body">
+                                            <h6 style="color: #1f2937; font-weight: 700; margin-bottom: 14px;"><i class="fas fa-star me-2" style="color: #f59e0b;"></i>Key Features</h6>
+                                            <ul class="list-unstyled">
+                                                {% for spec in product.specifications.all|slice:":8" %}
+                                                <li class="mb-3" style="padding-bottom: 10px; border-bottom: 1px solid rgba(102, 126, 234, 0.1);">
+                                                    <strong style="color: #667eea; font-size: 0.9rem;">{{ spec.key }}</strong><br>
+                                                    <span style="color: #6b7280; font-size: 0.9rem;">{{ spec.value }}</span>
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Specifications Tab -->
+                        <div class="tab-pane fade" id="specificationsTab">
+                            <div class="table-responsive">
+                                <table class="table" style="border: none;">
+                                    <tbody>
+                                        {% for spec in product.specifications.all %}
+                                        <tr style="border: 1px solid rgba(102, 126, 234, 0.1);">
+                                            <th width="35%" style="padding: 16px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.02) 100%); color: #667eea; font-weight: 700;">{{ spec.key }}</th>
+                                            <td style="padding: 16px; color: #4b5563;">{{ spec.value }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="text-center py-5" style="color: #9ca3af;">
+                                                <i class="fas fa-info-circle fa-2x mb-3" style="color: #d1d5db; display: block; margin-bottom: 12px;"></i>
+                                                <p>No specifications available</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Reviews Tab -->
+                        <div class="tab-pane fade" id="reviewsTab">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <!-- Rating Summary -->
+                                    <div class="card" style="border: 1px solid rgba(102, 126, 234, 0.15); border-radius: 14px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.08); margin-bottom: 20px;">
+                                        <div class="card-body text-center">
+                                            <h1 class="display-4" style="color: #667eea; font-weight: 800; margin-bottom: 0;">{{ product.average_rating|floatformat:1 }}</h1>
+                                            <div class="rating-stars justify-content-center mb-2" style="font-size: 1.2rem; color: #f59e0b; gap: 6px; display: flex;">
+                                                {% for i in "12345" %}
+                                                {% if forloop.counter <= product.average_rating %}
+                                                <i class="fas fa-star"></i>
+                                                {% else %}
+                                                <i class="far fa-star"></i>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <p style="color: #6b7280; margin-bottom: 0; font-weight: 600;">{{ product.review_count }} customer ratings</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if user.is_authenticated %}
+                                    <button class="btn w-100" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; padding: 14px; font-weight: 700; transition: all 0.3s ease;" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                        <i class="fas fa-edit me-2"></i>Write a Review
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-8">
+                                    <!-- Reviews List -->
+                                    <div class="mb-4">
+                                        <h5 style="color: #1f2937; font-weight: 700; margin-bottom: 20px;">Customer Reviews</h5>
+                                        {% if product.reviews.all %}
+                                        {% for review in product.reviews.all %}
+                                        <div class="card" style="border: 1px solid rgba(102, 126, 234, 0.1); border-radius: 12px; margin-bottom: 16px; transition: all 0.3s ease;">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between mb-2" style="gap: 12px;">
+                                                    <div>
+                                                        <strong style="color: #1f2937;">{{ review.user.username }}</strong>
+                                                        <div class="rating-stars" style="font-size: 0.9rem; color: #f59e0b; gap: 4px; display: flex; margin-top: 4px;">
+                                                            {% for i in "12345" %}
+                                                            {% if forloop.counter <= review.rating %}
+                                                            <i class="fas fa-star"></i>
+                                                            {% else %}
+                                                            <i class="far fa-star"></i>
+                                                            {% endif %}
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    <small style="color: #9ca3af; white-space: nowrap;">{{ review.created_at|date:"M d, Y" }}</small>
+                                                </div>
+                                                <p style="color: #4b5563; margin-bottom: 0;">{{ review.comment }}</p>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        {% else %}
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-comment-alt fa-3x" style="color: #d1d5db; display: block; margin-bottom: 16px;"></i>
+                                            <h5 style="color: #1f2937; font-weight: 700;">No reviews yet</h5>
+                                            <p style="color: #6b7280; margin-bottom: 0;">Be the first to share your experience!</p>
+                                            {% if user.is_authenticated %}
+                                            <button class="btn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; margin-top: 12px; transition: all 0.3s ease;" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                                Write First Review
+                                            </button>
+                                            {% else %}
+                                            <a href="{% url 'users:login' %}?next={{ request.path | urlencode }}" class="btn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; padding: 10px 20px; font-weight: 700; margin-top: 12px; display: inline-block; text-decoration: none; transition: all 0.3s ease;">
+                                                Login to Review
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Shipping Tab -->
+                        <div class="tab-pane fade" id="shippingTab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 style="color: #1f2937; font-weight: 700; margin-bottom: 18px;"><i class="fas fa-truck me-2" style="color: #667eea;"></i>Shipping Information</h5>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>Free standard shipping on orders over $50</span>
+                                        </li>
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>Express shipping: $9.99 (1-2 business days)</span>
+                                        </li>
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>International shipping available</span>
+                                        </li>
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>Estimated delivery: 3-7 business days</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 style="color: #1f2937; font-weight: 700; margin-bottom: 18px;"><i class="fas fa-undo me-2" style="color: #667eea;"></i>Return Policy</h5>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>30-day return policy</span>
+                                        </li>
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>Items must be in original condition</span>
+                                        </li>
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>Free returns for defective products</span>
+                                        </li>
+                                        <li class="mb-3" style="color: #4b5563; display: flex; gap: 10px;">
+                                            <i class="fas fa-check" style="color: #10b981; font-weight: 700; margin-top: 2px; flex-shrink: 0;"></i>
+                                            <span>Refund within 5-7 business days</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+     <!-- Related Products - Modern -->
+    {% if related_products %}
+    <div class="row mt-6" style="margin-top: 60px;">
+        <div class="col-12">
+            <h3 style="font-size: 1.8rem; font-weight: 800; color: #1f2937; margin-bottom: 32px;"><i class="fas fa-link me-3" style="color: #667eea;"></i>Related Products</h3>
+            <div class="row">
+                {% for related in related_products %}
+                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                    <div class="product-card" style="border: 1px solid rgba(102, 126, 234, 0.15); border-radius: 16px; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 20px rgba(102, 126, 234, 0.08); background: white;">
+                        <div class="position-relative" style="overflow: hidden; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);">
+                            {% with rel_image=related.images.first %}
+                            <img src="{% if rel_image %}{{ rel_image.image.url }}{% else %}https://via.placeholder.com/300{% endif %}" 
+                                 alt="{{ related.name }}" class="card-img-top" style="height: 260px; object-fit: cover; transition: transform 0.4s ease;">
+                            {% endwith %}
+                            {% if related.discount_price %}
+                            <span class="badge" style="position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);">{{ related.discount_percentage }}% OFF</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body" style="padding: 16px;">
+                            <h6 class="card-title" style="color: #1f2937; font-weight: 700; line-height: 1.4; margin-bottom: 10px; min-height: 44px;">{{ related.name|truncatechars:50 }}</h6>
+                            <div class="rating-stars mb-2" style="font-size: 0.9rem; color: #f59e0b; gap: 4px; display: flex;">
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= related.average_rating %}
+                                <i class="fas fa-star"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center" style="padding-top: 12px; border-top: 1px solid rgba(102, 126, 234, 0.1);">
+                                <div>
+                                    {% if related.discount_price %}
+                                    <span class="h6" style="color: #667eea; margin: 0; font-weight: 700;">${{ related.discount_price }}</span>
+                                    <span style="text-decoration: line-through; color: #9ca3af; font-size: 0.85rem; margin-left: 8px;">{{ related.price }}</span>
+                                    {% else %}
+                                    <span class="h6" style="color: #667eea; margin: 0; font-weight: 700;">${{ related.price }}</span>
+                                    {% endif %}
+                                </div>
+                                <button class="btn btn-sm" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; border-radius: 10px; padding: 8px 12px; transition: all 0.3s ease; cursor: pointer;" onclick="addToCart('{{ related.id }}')">
+                                    <i class="fas fa-cart-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <a href="{% url 'products:product_detail' related.slug %}" class="stretched-link"></a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Review Modal -->
+{% if user.is_authenticated %}
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Share Your Experience</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'products:add_review' product.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Rating *</label>
+                        <div class="rating-input d-flex gap-2" style="font-size: 2rem;">
+                            {% for i in "54321" %}
+                            <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" required style="display: none;">
+                            <label for="star{{ i }}" style="cursor: pointer; color: #ddd;">
+                                <i class="far fa-star"></i>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reviewTitle" class="form-label fw-bold">Review Title</label>
+                        <input type="text" name="title" id="reviewTitle" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="reviewComment" class="form-label fw-bold">Your Review *</label>
+                        <textarea name="comment" id="reviewComment" class="form-control" rows="4" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Show notification
+function showMessage(level, text) {
+    let container = document.querySelector('.messages-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'messages-container';
+        container.style.cssText = 'position: fixed; top: 90px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
+        document.body.appendChild(container);
+    }
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${level} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px; margin-bottom: 10px;';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${level === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            <div class="flex-grow-1">${text}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    container.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+// Store the current product ID in a global variable
+const CURRENT_PRODUCT_ID = {{ product.id }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ===== THUMBNAIL HANDLER =====
+    const thumbnails = document.querySelectorAll('.thumbnail-item');
+    thumbnails.forEach(thumb => {
+        thumb.addEventListener('click', function(e) {
+            e.preventDefault();
+            const imgSrc = this.dataset.imageSrc || this.querySelector('img')?.src;
+            const mainImage = document.getElementById('mainImage');
+            if (mainImage && imgSrc) {
+                mainImage.src = imgSrc;
+                thumbnails.forEach(t => {
+                    const tImg = t.querySelector('img');
+                    if (tImg) {
+                        tImg.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+                        tImg.style.opacity = '0.65';
+                    }
+                });
+                const currentImg = this.querySelector('img');
+                if (currentImg) {
+                    currentImg.style.borderColor = '#667eea';
+                    currentImg.style.opacity = '1';
+                }
+            }
+        });
+    });
+    
+    // ===== QUANTITY HANDLER =====
+    const quantityBtns = document.querySelectorAll('.quantity-btn');
+    const quantityInput = document.getElementById('quantity');
+    const maxStock = {{ product.stock }};
+    
+    quantityBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const action = this.dataset.action;
+            let currentVal = parseInt(quantityInput.value) || 1;
+            if (action === 'increase' && currentVal < maxStock) {
+                quantityInput.value = currentVal + 1;
+            } else if (action === 'decrease' && currentVal > 1) {
+                quantityInput.value = currentVal - 1;
+            }
+        });
+    });
+    
+    // ===== ADD TO CART HANDLER =====
+    const addToCartBtn = document.querySelector('.btn-add-to-cart');
+    if (addToCartBtn) {
+        addToCartBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = this.dataset.productId;
+            const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
+            
+            // Build URL with the correct product ID - using Django URL with placeholder replaced
+            const addToCartUrl = "{% url 'cart:add_to_cart' 0 %}".replace('0', productId);
+            
+            fetch(addToCartUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ quantity: quantity })
+            })
+            .then(async response => {
+                const data = await response.json().catch(() => null);
+                if (!response.ok) throw new Error(data?.message || 'Request failed');
+                return data;
+            })
+            .then(data => {
+                if (data && data.success) {
+                    showMessage('success', data.message || 'Added to cart!');
+                    if (data.cart_quantity) {
+                        const cartCountEl = document.getElementById('cart-count');
+                        if (cartCountEl) cartCountEl.textContent = data.cart_quantity;
+                    }
+                } else {
+                    showMessage('danger', data?.message || 'Could not add to cart');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showMessage('danger', err.message || 'Network error');
+            });
+        });
+    }
+    
+    // ===== BUY NOW HANDLER =====
+    const buyNowBtn = document.querySelector('.btn-buy-now');
+    if (buyNowBtn) {
+        buyNowBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = this.dataset.productId;
+            const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
+            
+            const addToCartUrl = "{% url 'cart:add_to_cart' 0 %}".replace('0', productId);
+            const checkoutUrl = "{% url 'orders:checkout' %}";
+            const loginUrl = "{% url 'users:login' %}";
+            const currentUrl = window.location.href;
+            
+            fetch(addToCartUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ quantity: quantity })
+            })
+            .then(async response => {
+                if (response.status === 403 || response.status === 401) {
+                    window.location.href = loginUrl + '?next=' + encodeURIComponent(currentUrl);
+                    throw new Error('redirect');
+                }
+                const data = await response.json().catch(() => null);
+                if (!response.ok) throw new Error(data?.message || 'Request failed');
+                return data;
+            })
+            .then(data => {
+                if (data && data.success) {
+                    showMessage('success', 'Redirecting to checkout...');
+                    setTimeout(() => {
+                        window.location.href = checkoutUrl;
+                    }, 500);
+                } else {
+                    showMessage('danger', data?.message || 'Could not proceed');
+                }
+            })
+            .catch(err => {
+                if (err.message !== 'redirect') {
+                    showMessage('danger', err.message || 'Network error');
+                }
+            });
+        });
+    }
+    
+    // ===== WISHLIST HANDLER =====
+    const wishlistBtn = document.querySelector('.btn-add-wishlist');
+    if (wishlistBtn) {
+        wishlistBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = this.dataset.productId;
+            const toggleWishlistUrl = "{% url 'products:toggle_wishlist' 0 %}".replace('0', productId);
+            const loginUrl = "{% url 'users:login' %}";
+            const currentUrl = window.location.href;
+            
+            fetch(toggleWishlistUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(async response => {
+                if (response.status === 403 || response.status === 401) {
+                    window.location.href = loginUrl + '?next=' + encodeURIComponent(currentUrl);
+                    throw new Error('redirect');
+                }
+                const data = await response.json().catch(() => null);
+                if (!response.ok) throw new Error(data?.message || 'Request failed');
+                return data;
+            })
+            .then(data => {
+                if (data && data.success) {
+                    const action = data.action;
+                    if (action === 'added') {
+                        showMessage('success', 'Added to wishlist!');
+                        const icon = wishlistBtn.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas');
+                        }
+                    } else if (action === 'removed') {
+                        showMessage('info', 'Removed from wishlist');
+                        const icon = wishlistBtn.querySelector('i');
+                        if (icon) {
+                            icon.classList.remove('fas');
+                            icon.classList.add('far');
+                        }
+                    } else {
+                        showMessage('success', data.message || 'Wishlist updated');
+                    }
+                } else {
+                    showMessage('danger', data?.message || 'Could not update wishlist');
+                }
+            })
+            .catch(err => {
+                if (err.message !== 'redirect') {
+                    showMessage('danger', err.message || 'Network error');
+                }
+            });
+        });
+    }
+    
+    // ===== RATING STARS =====
+    const ratingStars = document.querySelectorAll('.rating-input input[type="radio"]');
+    ratingStars.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const rating = parseInt(this.value);
+            const labels = this.closest('.rating-input').querySelectorAll('label');
+            labels.forEach((label, index) => {
+                const icon = label.querySelector('i');
+                if (icon) {
+                    if (index < rating) {
+                        icon.className = 'fas fa-star';
+                        label.style.color = '#fbbf24';
+                    } else {
+                        icon.className = 'far fa-star';
+                        label.style.color = '#ddd';
+                    }
+                }
+            });
+        });
+    });
+});
+</script>
+
+<style>
+    @keyframes pulse-discount {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    .btn-add-to-cart, .btn-buy-now, .btn-add-wishlist {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-add-to-cart:hover, .btn-buy-now:hover, .btn-add-wishlist:hover {
+        transform: translateY(-3px);
+    }
+    
+    .btn-add-to-cart:hover { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+    .btn-buy-now:hover { box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4); }
+    .btn-add-wishlist:hover {
+        background: linear-gradient(135deg, #fef3c7, #fef08a) !important;
+        border-color: #f59e0b !important;
+    }
+    
+    .quantity-btn { transition: all 0.2s ease; }
+    .quantity-btn:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.15)) !important;
+        transform: scale(1.05);
+    }
+    
+    .thumbnail-item { transition: all 0.3s ease; }
+    .thumbnail-item:hover { transform: scale(1.05); }
+    
+    @media (max-width: 768px) {
+        .btn-add-to-cart, .btn-buy-now, .btn-add-wishlist {
+            padding: 14px !important;
+            font-size: 0.95rem !important;
+        }
+    }
+</style>
+{% endblock %}

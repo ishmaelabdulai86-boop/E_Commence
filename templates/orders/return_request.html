@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Return - TechStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-4">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'profile' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'order_list' %}">My Orders</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'order_detail' order.order_number %}">Order #{{ order.order_number }}</a></li>
+                            <li class="breadcrumb-item active">Request Return</li>
+                        </ol>
+                    </nav>
+                    
+                    <h2 class="mb-4">Request Return</h2>
+                    
+                    <!-- Order Item Info -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Item to Return</h5>
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <img src="{{ order_item.product.image.url|default:'https://via.placeholder.com/100' }}" 
+                                         alt="{{ order_item.product_name }}" class="img-fluid rounded">
+                                </div>
+                                <div class="col-md-10">
+                                    <h6 class="mb-1">{{ order_item.product_name }}</h6>
+                                    <p class="text-muted mb-1">SKU: {{ order_item.product_sku }}</p>
+                                    <p class="mb-1">Quantity: {{ order_item.quantity }}</p>
+                                    <p class="mb-0">Price: ${{ order_item.unit_price }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Return Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Return Details</h5>
+                                
+                                <!-- Return Reason -->
+                                <div class="mb-4">
+                                    <label class="form-label">Reason for Return *</label>
+                                    <div class="row">
+                                        {% for value, label in return_reasons %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="reason" 
+                                                       id="reason{{ forloop.counter }}" value="{{ value }}" 
+                                                       {% if forloop.first %}checked{% endif %}>
+                                                <label class="form-check-label" for="reason{{ forloop.counter }}">
+                                                    {{ label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Description -->
+                                <div class="mb-4">
+                                    <label for="description" class="form-label">Description *</label>
+                                    <textarea name="description" id="description" class="form-control" rows="4" 
+                                              placeholder="Please provide details about why you are returning this item..." 
+                                              required></textarea>
+                                    <div class="form-text">
+                                        Be as detailed as possible. This will help us process your return faster.
+                                    </div>
+                                </div>
+                                
+                                <!-- Condition -->
+                                <div class="mb-4">
+                                    <label class="form-label">Item Condition</label>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="condition" 
+                                                       id="conditionNew" value="new" checked>
+                                                <label class="form-check-label" for="conditionNew">
+                                                    <i class="fas fa-box me-2"></i>Unopened
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="condition" 
+                                                       id="conditionUsed" value="used">
+                                                <label class="form-check-label" for="conditionUsed">
+                                                    <i class="fas fa-box-open me-2"></i>Opened/Used
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="condition" 
+                                                       id="conditionDamaged" value="damaged">
+                                                <label class="form-check-label" for="conditionDamaged">
+                                                    <i class="fas fa-times-circle me-2"></i>Damaged
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Refund Preference -->
+                                <div class="mb-4">
+                                    <label class="form-label">Refund Preference *</label>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="refund_preference" 
+                                                       id="refundOriginal" value="original" checked>
+                                                <label class="form-check-label" for="refundOriginal">
+                                                    <i class="fas fa-credit-card me-2"></i>Original payment method
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="refund_preference" 
+                                                       id="refundStore" value="store">
+                                                <label class="form-check-label" for="refundStore">
+                                                    <i class="fas fa-gift-card me-2"></i>Store credit
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Return Shipping -->
+                                <div class="mb-4">
+                                    <label class="form-label">Return Shipping Method</label>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="shipping_method" 
+                                                       id="shippingLabel" value="label" checked>
+                                                <label class="form-check-label" for="shippingLabel">
+                                                    <i class="fas fa-print me-2"></i>Use prepaid return label
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">We'll email you a return label to print</small>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="shipping_method" 
+                                                       id="shippingOwn" value="own">
+                                                <label class="form-check-label" for="shippingOwn">
+                                                    <i class="fas fa-shipping-fast me-2"></i>Use my own shipping
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">You'll be responsible for shipping costs</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Return Policy -->
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Return Policy</h5>
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Important Information</h6>
+                                    <ul class="mb-0">
+                                        <li>Returns must be initiated within 30 days of delivery</li>
+                                        <li>Items must be in original condition with all tags and packaging</li>
+                                        <li>Refunds will be processed within 5-7 business days after we receive the item</li>
+                                        <li>Original shipping charges are non-refundable</li>
+                                        <li>Sale items may have different return policies</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="agreePolicy" required>
+                                    <label class="form-check-label" for="agreePolicy">
+                                        I have read and agree to the return policy
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'order_detail' order.order_number %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary-custom">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Return Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Return Process Info -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Return Process</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary-custom rounded-circle p-3">1</span>
+                                </div>
+                                <h6>Submit Request</h6>
+                                <p class="small text-muted mb-0">Fill out this form to start your return</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary-custom rounded-circle p-3">2</span>
+                                </div>
+                                <h6>Get Approval</h6>
+                                <p class="small text-muted mb-0">We'll review and approve within 24 hours</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary-custom rounded-circle p-3">3</span>
+                                </div>
+                                <h6>Ship Item</h6>
+                                <p class="small text-muted mb-0">Print label and ship the item back to us</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary-custom rounded-circle p-3">4</span>
+                                </div>
+                                <h6>Get Refund</h6>
+                                <p class="small text-muted mb-0">Receive refund within 5-7 business days</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const agreeCheckbox = document.getElementById('agreePolicy');
+        
+        form.addEventListener('submit', function(event) {
+            if (!agreeCheckbox.checked) {
+                event.preventDefault();
+                alert('You must agree to the return policy to proceed.');
+                agreeCheckbox.focus();
+            }
+        });
+        
+        // Character counter for description
+        const descriptionTextarea = document.getElementById('description');
+        const charCount = document.createElement('div');
+        charCount.className = 'form-text text-end';
+        charCount.textContent = '0/500 characters';
+        descriptionTextarea.parentNode.appendChild(charCount);
+        
+        descriptionTextarea.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = `${count}/500 characters`;
+            charCount.className = `form-text text-end ${count > 500 ? 'text-danger' : 'text-muted'}`;
+            
+            if (count > 500) {
+                this.value = this.value.substring(0, 500);
+                charCount.textContent = '500/500 characters (limit reached)';
+            }
+        });
+    });
+</script>
+{% endblock %}

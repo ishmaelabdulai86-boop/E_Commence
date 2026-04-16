@@ -1,0 +1,220 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Template Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-code me-2"></i>Template: {{ template.name }}
+            </h1>
+            <p class="text-muted mb-0">View and manage template details</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_template_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Template Information -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Template Information
+                    </h6>
+                    <div>
+                        <a href="{% url 'notifications:admin_template_detail' template.id %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i>Edit in Admin
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Template Name</label>
+                                <input type="text" class="form-control" name="name" value="{{ template.name }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Template Type</label>
+                                <input type="text" class="form-control" value="{{ template.get_template_type_display }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Category</label>
+                                <input type="text" class="form-control" value="{{ template.get_category_display }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Priority</label>
+                                <input type="text" class="form-control" value="{{ template.get_priority_display }}" readonly>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Subject</label>
+                                <input type="text" class="form-control" name="subject" value="{{ template.subject }}" readonly>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_active" 
+                                           id="is_active" {% if template.is_active %}checked{% endif %} disabled>
+                                    <label class="form-check-label" for="is_active">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Template Content -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Template Content
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if template.template_type == 'email' %}
+                    <div class="mb-3">
+                        <label class="form-label">HTML Content</label>
+                        <pre class="bg-light p-3" style="max-height: 300px; overflow: auto;">{{ template.html_content }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    {% if template.text_content %}
+                    <div class="mb-3">
+                        <label class="form-label">Text Content (SMS/Plain Text)</label>
+                        <pre class="bg-light p-3" style="max-height: 200px; overflow: auto;">{{ template.text_content }}</pre>
+                    </div>
+                    {% endif %}
+                    
+                    {% if template.push_content %}
+                    <div class="mb-3">
+                        <label class="form-label">Push Notification Content</label>
+                        <pre class="bg-light p-3" style="max-height: 200px; overflow: auto;">{{ template.push_content }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Variables -->
+            {% if template.available_variables %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Available Variables
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Use these variables in your template content with {% verbatim %}{{ variable }}{% endverbatim %} syntax
+                    </div>
+                    <div class="row">
+                        {% for variable in template.available_variables %}
+                        <div class="col-md-6 mb-2">
+                            <code>{% verbatim %}{{ {% endverbatim %}{{ variable }}{% verbatim %} }}{% endverbatim %}</code>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Usage Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Usage Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <h2 class="mb-0">{{ usage_stats.total_used|default:0 }}</h2>
+                            <small class="text-muted">Total Uses</small>
+                        </div>
+                        <div class="text-end">
+                            <h6 class="mb-0">
+                                {% if usage_stats.last_used %}
+                                {{ usage_stats.last_used|date:"M d, Y" }}
+                                {% else %}
+                                Never
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">Last Used</small>
+                        </div>
+                    </div>
+                    
+                    {% if usage_stats.total_used > 0 %}
+                    <div class="progress mb-3" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                            style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small class="text-muted">This template has been used {{ usage_stats.total_used }} times.</small>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        This template has never been used.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="d-grid gap-2">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="preview" class="btn btn-primary">
+                            <i class="fas fa-eye me-1"></i>Preview Template
+                        </button>
+                        <a href="{% url 'notifications:admin_test_notification' %}?template_id={{ template.id }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-paper-plane me-1"></i>Send Test
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Template Preview -->
+            {% if preview_content %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Template Preview
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light">
+                        {{ preview_content|safe }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+</style>
+{% endblock %}

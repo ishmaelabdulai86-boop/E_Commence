@@ -1,0 +1,628 @@
+<!-- products/templates/products/category_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Categories - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== Modern Color Palette ===== */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --primary-soft: rgba(102, 126, 234, 0.05);
+        --primary-border: rgba(102, 126, 234, 0.15);
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --bg-light: #f9fafb;
+    }
+
+    /* ===== Category Cards - Modern Design ===== */
+    .category-card {
+        border: 1px solid var(--primary-border);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    }
+    
+    .category-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 50px rgba(102, 126, 234, 0.15);
+        border-color: #667eea;
+    }
+    
+    .category-image-container {
+        height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--primary-soft) 0%, rgba(118, 75, 162, 0.03) 100%);
+        overflow: hidden;
+        position: relative;
+        border-bottom: 1px solid var(--primary-border);
+    }
+    
+    .category-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .category-card:hover .category-image {
+        transform: scale(1.08);
+    }
+    
+    /* Fallback for no image */
+    .category-image-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--primary-soft) 0%, rgba(118, 75, 162, 0.03) 100%);
+    }
+    
+    .category-icon-container {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-gradient);
+        color: white;
+        font-size: 2.5rem;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .category-card:hover .category-icon-container {
+        transform: scale(1.1);
+    }
+    
+    /* Product Count Badge - Modern Style */
+    .category-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        z-index: 2;
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+        letter-spacing: 0.3px;
+    }
+    
+    /* Card Body */
+    .category-card .card-body {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Category Title */
+    .category-card .card-title {
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+        line-height: 1.4;
+    }
+    
+    .category-card .card-title a {
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    
+    .category-card .card-title a:hover {
+        color: #667eea;
+    }
+    
+    /* Category Description */
+    .category-card .card-text {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 12px;
+        font-weight: 500;
+    }
+    
+    /* Stats Section */
+    .category-stats {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+    
+    .category-stats .badge {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .category-stats .badge.bg-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        color: white;
+        border: none;
+    }
+    
+    .category-stats .badge.bg-info {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        color: white;
+        border: none;
+    }
+    
+    /* Browse Button - Modern Style */
+    .category-card .btn-outline-primary {
+        color: white;
+        border: none;
+        background: var(--primary-gradient);
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        padding: 12px 20px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: 0.3px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+    
+    .category-card .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #5a52d4, #6d3a99);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Empty state */
+    .empty-state-icon {
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        opacity: 0.6;
+    }
+    
+    /* ===== Categories Header - Modern Design ===== */
+    .categories-header {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 3.5rem 0;
+        margin-bottom: 3rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(102, 126, 234, 0.15);
+    }
+
+    .categories-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        transform: translate(150px, -150px);
+        z-index: 0;
+    }
+
+    .categories-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 400px;
+        height: 400px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 50%;
+        transform: translate(-100px, 100px);
+        z-index: 0;
+    }
+
+    .categories-header > * {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .categories-header h1 {
+        font-weight: 800;
+        font-size: 2.8rem;
+        letter-spacing: -0.5px;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        color: white !important;
+    }
+    
+    .categories-header .lead {
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-size: 1.05rem;
+        font-weight: 400;
+    }
+    
+    /* Breadcrumb - Modern Style */
+    .breadcrumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 10px 16px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        margin-bottom: 1.5rem !important;
+    }
+
+    .breadcrumb-item a {
+        color: rgba(255, 255, 255, 0.9) !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+    .breadcrumb-item a:hover {
+        color: white !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .breadcrumb-item.active {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    /* Category count badge in header */
+    .badge.bg-light {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        color: white !important;
+        backdrop-filter: blur(10px);
+        padding: 12px 20px !important;
+        border-radius: 12px !important;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .badge.bg-light:hover {
+        background: rgba(255, 255, 255, 0.3) !important;
+        transform: translateY(-2px);
+    }
+    
+    /* Pagination - Modern Style */
+    .pagination {
+        gap: 8px;
+    }
+
+    .page-item .page-link {
+        border: 1px solid var(--primary-border);
+        border-radius: 10px;
+        color: #667eea;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        padding: 8px 12px;
+    }
+
+    .page-item .page-link:hover {
+        background: var(--primary-soft);
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-gradient);
+        border-color: #667eea;
+        color: white;
+    }
+
+    /* CTA Section */
+    .bg-light {
+        background: linear-gradient(135deg, var(--primary-soft) 0%, rgba(118, 75, 162, 0.03) 100%) !important;
+        border-top: 1px solid var(--primary-border);
+        border-bottom: 1px solid var(--primary-border);
+    }
+
+    .bg-light h3 {
+        color: var(--text-primary);
+        font-weight: 800;
+    }
+
+    .bg-light .text-muted {
+        color: var(--text-secondary) !important;
+        font-weight: 500;
+    }
+
+    .bg-light .btn-primary {
+        background: var(--primary-gradient);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+    
+    .bg-light .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        background: linear-gradient(135deg, #5a52d4, #6d3a99);
+    }
+
+    .bg-light .btn-outline-primary {
+        color: #667eea;
+        border: 2px solid var(--primary-border);
+        background: white;
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .bg-light .btn-outline-primary:hover {
+        background: var(--primary-gradient);
+        border-color: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+        .col-lg-4 {
+            flex: 0 0 calc(33.333% - 10px);
+            max-width: calc(33.333% - 10px);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .col-lg-4, .col-md-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+        
+        .category-image-container {
+            height: 180px;
+        }
+
+        .categories-header h1 {
+            font-size: 2.2rem;
+        }
+
+        .categories-header {
+            padding: 2.5rem 0;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-lg-4, .col-md-6 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+        
+        .category-image-container {
+            height: 160px;
+        }
+
+        .category-card .card-body {
+            padding: 16px;
+        }
+
+        .categories-header h1 {
+            font-size: 1.8rem;
+        }
+
+        .categories-header {
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Categories Header - Modern Design -->
+<div class="categories-header">
+    <div class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'products:category_list' %}">Products</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Categories</li>
+            </ol>
+        </nav>
+        
+        <div class="row align-items-end">
+            <div class="col-lg-8">
+                <h1 class="mb-2">Product Categories</h1>
+                <p class="lead mb-0">Explore our comprehensive collection</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <span class="badge bg-light">
+                    <i class="fas fa-sitemap me-2"></i> 
+                    {% if total_categories %}
+                        {{ total_categories }} Categories
+                    {% else %}
+                        {{ categories|length }} Categories
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Categories Grid -->
+<div class="container py-5">
+    <div class="row g-4">
+        {% for category in categories %}
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="category-card h-100">
+                <!-- Category Image -->
+                <div class="category-image-container">
+                    {% if category.image and category.image.url %}
+                        <img src="{{ category.image.url }}" 
+                             class="category-image" 
+                             alt="{{ category.name }}"
+                             loading="lazy"
+                             onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div class=\'category-image-placeholder\'><div class=\'category-icon-container\'><i class=\'' + this.getAttribute('data-icon') + '\'></i></div></div>';"
+                             data-icon="{{ category.icon|default:'fas fa-box' }}">
+                    {% else %}
+                        <div class="category-image-placeholder">
+                            <div class="category-icon-container">
+                                <i class="{{ category.icon|default:'fas fa-box' }}"></i>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Product Count Badge -->
+                    {% if category.product_count %}
+                    <div class="category-badge">
+                        <i class="fas fa-box me-1"></i>{{ category.product_count }} products
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Category Content -->
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{% url 'products:category_detail' category.slug %}">
+                            {{ category.name }}
+                        </a>
+                    </h5>
+                    
+                    <!-- Category Description -->
+                    {% if category.description %}
+                    <p class="card-text">
+                        {{ category.description|truncatewords:15 }}
+                    </p>
+                    {% else %}
+                    <p class="card-text text-muted">
+                        Explore our collection of quality products
+                    </p>
+                    {% endif %}
+                    
+                    <!-- Stats -->
+                    <div class="category-stats">
+                        <span class="badge bg-primary">
+                            <i class="fas fa-box"></i> {{ category.product_count|default:0 }}
+                        </span>
+                        
+                        {% if category.subcategory_count %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-sitemap"></i> {{ category.subcategory_count }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Browse Button -->
+                    <div class="mt-auto pt-3">
+                        <a href="{% url 'products:category_detail' category.slug %}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Explore
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Empty State -->
+        <div class="col-12 text-center py-5">
+            <div class="mb-4">
+                <div class="empty-state-icon">
+                    <i class="fas fa-folder-open fa-5x"></i>
+                </div>
+            </div>
+            <h3 class="text-muted mb-3">No categories found</h3>
+            <p class="text-muted mb-4">We're still setting up our categories. Please check back later!</p>
+            <a href="{% url 'products:home' %}" class="btn btn-primary">
+                <i class="fas fa-home me-2"></i>Return to Home
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if categories.has_other_pages %}
+    <div class="mt-5">
+        <nav aria-label="Categories pagination">
+            <ul class="pagination justify-content-center">
+                {% if categories.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?page={{ categories.previous_page_number }}"
+                       aria-label="Previous">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in categories.paginator.page_range %}
+                    {% if categories.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > categories.number|add:'-3' and num < categories.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if categories.has_next %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?page={{ categories.next_page_number }}"
+                       aria-label="Next">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- CTA Section -->
+<div class="container-fluid bg-light py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h3 class="mb-3">
+                    <i class="fas fa-search me-2"></i>Can't find what you're looking for?
+                </h3>
+                <p class="text-muted mb-4">
+                    Browse through all our products or contact our support team for assistance.
+                </p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <a href="{% url 'products:product_list' %}" class="btn btn-primary">
+                        <i class="fas fa-store me-2"></i>View All Products
+                    </a>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="fas fa-headset me-2"></i>Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

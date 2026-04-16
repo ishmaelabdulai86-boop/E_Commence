@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Results - TechStore{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Search Filters</h5>
+                    
+                    <!-- Search Query -->
+                    <div class="mb-3">
+                        <label class="form-label">Search Query</label>
+                        <input type="text" class="form-control" value="{{ query }}" readonly>
+                    </div>
+                    
+                    <!-- Categories -->
+                    <div class="mb-3">
+                        <label class="form-label">Categories</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="catAll" 
+                                   onchange="toggleAllCategories()">
+                            <label class="form-check-label" for="catAll">All Categories</label>
+                        </div>
+                        {% for category in categories %}
+                        <div class="form-check">
+                            <input class="form-check-input category-checkbox" type="checkbox" 
+                                   id="cat{{ category.id }}" value="{{ category.id }}">
+                            <label class="form-check-label" for="cat{{ category.id }}">{{ category.name }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Price Range -->
+                    <div class="mb-3">
+                        <label class="form-label">Price Range</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control" placeholder="Min" 
+                                       id="minPrice" value="{{ request.GET.min_price|default:0 }}">
+                            </div>
+                            <div class="col-6">
+                                <input type="number" class="form-control" placeholder="Max" 
+                                       id="maxPrice" value="{{ request.GET.max_price|default:1000 }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rating -->
+                    <div class="mb-3">
+                        <label class="form-label">Minimum Rating</label>
+                        <div class="rating-filter">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" 
+                                       id="rating5" value="5"
+                                       {% if request.GET.min_rating == '5' %}checked{% endif %}>
+                                <label class="form-check-label" for="rating5">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i> & above
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" 
+                                       id="rating4" value="4"
+                                       {% if request.GET.min_rating == '4' %}checked{% endif %}>
+                                <label class="form-check-label" for="rating4">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="far fa-star text-warning"></i> & above
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="rating" 
+                                       id="rating3" value="3"
+                                       {% if request.GET.min_rating == '3' %}checked{% endif %}>
+                                <label class="form-check-label" for="rating3">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="fas fa-star text-warning"></i>
+                                    <i class="far fa-star text-warning"></i>
+                                    <i class="far fa-star text-warning"></i> & above
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Availability -->
+                    <div class="mb-3">
+                        <label class="form-label">Availability</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="availability" 
+                                   id="allStock" value=""
+                                   {% if not request.GET.availability %}checked{% endif %}>
+                            <label class="form-check-label" for="allStock">All</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="availability" 
+                                   id="inStock" value="in_stock"
+                                   {% if request.GET.availability == 'in_stock' %}checked{% endif %}>
+                            <label class="form-check-label" for="inStock">In Stock</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="availability" 
+                                   id="outOfStock" value="out_of_stock"
+                                   {% if request.GET.availability == 'out_of_stock' %}checked{% endif %}>
+                            <label class="form-check-label" for="outOfStock">Out of Stock</label>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" onclick="applyFilters()">Apply Filters</button>
+                    {% if request.GET.min_price or request.GET.max_price or request.GET.min_rating or request.GET.availability %}
+                    <button class="btn btn-outline-secondary w-100 mt-2" onclick="clearFilters()">Clear Filters</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Results -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">Search Results</h1>
+                    <p class="text-muted mb-0">
+                        {% if query %}
+                        Showing results for "<strong>{{ query }}</strong>"
+                        {% else %}
+                        Showing all products
+                        {% endif %}
+                        <span class="ms-2">({{ products.paginator.count }} found)</span>
+                    </p>
+                </div>
+                
+                <div class="d-flex align-items-center">
+                    <span class="me-2">Sort by:</span>
+                    <select class="form-select w-auto" id="sortSelect" onchange="applySort()">
+                        <option value="newest" {% if request.GET.sort_by == 'newest' %}selected{% endif %}>Newest</option>
+                        <option value="price_low" {% if request.GET.sort_by == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high" {% if request.GET.sort_by == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="rating" {% if request.GET.sort_by == 'rating' %}selected{% endif %}>Highest Rated</option>
+                    </select>
+                </div>
+            </div>
+            
+            {% if products %}
+            <div class="row">
+                {% for product in products %}
+                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                    <div class="product-card">
+                        <div class="position-relative overflow-hidden">
+                            <img src="{{ product.image.url|default:'https://via.placeholder.com/300x300' }}" 
+                                alt="{{ product.name }}" 
+                                class="card-img-top product-img">
+                            {% if product.discount_price %}
+                            <span class="badge badge-discount">{{ product.discount_percentage|default:"20" }}% OFF</span>
+                            {% endif %}
+                            
+                            <!-- Category Tag -->
+                            <div class="category-tag position-absolute top-0 start-0 m-2">
+                                <span class="badge bg-info">
+                                    {{ product.category.name|default:"Uncategorized" }}
+                                </span>
+                            </div>
+                            
+                            <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" 
+                                    onclick="addToWishlist('{{ product.id }}')">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ product.name|truncatechars:50 }}</h6>
+                            <div class="rating-stars mb-2">
+                                {% with rating=product.rating|default:0 %}
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= rating %}
+                                <i class="fas fa-star"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                                {% endfor %}
+                                {% endwith %}
+                                <small class="text-muted">({{ product.review_count|default:0 }})</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if product.discount_price %}
+                                    <span class="h5 text-primary">${{ product.discount_price }}</span>
+                                    <span class="text-muted text-decoration-line-through ms-2">${{ product.price }}</span>
+                                    {% else %}
+                                    <span class="h5 text-primary">${{ product.price }}</span>
+                                    {% endif %}
+                                </div>
+                                <button class="btn btn-sm btn-primary" onclick="addToCart('{{ product.id }}')">
+                                    <i class="fas fa-cart-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <a href="{% url 'product_detail' product.slug %}" class="stretched-link"></a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination - Simple Version -->
+            {% if products.paginator.num_pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if products.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage({{ products.previous_page_number }})">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in products.paginator.page_range %}
+                    {% if products.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage({{ num }})">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if products.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="goToPage({{ products.next_page_number }})">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h3>No products found</h3>
+                <p class="text-muted mb-4">
+                    {% if query %}
+                    We couldn't find any products matching "{{ query }}"
+                    {% else %}
+                    No products available
+                    {% endif %}
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'product_list' %}" class="btn btn-primary">
+                        <i class="fas fa-store me-2"></i>Browse All Products
+                    </a>
+                    <button class="btn btn-outline-primary" onclick="clearAllFilters()">
+                        <i class="fas fa-times me-2"></i>Clear All Filters
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card {
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        border-color: #6C63FF;
+    }
+    
+    .product-img {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+    
+    .badge-discount {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #dc3545;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .category-tag .badge {
+        background-color: #17a2b8 !important;
+        color: white;
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Build URL with parameters
+    function buildUrl(params = {}) {
+        let url = '?';
+        
+        // Always include search query
+        const query = '{{ query|escapejs }}';
+        if (query) {
+            url += `q=${encodeURIComponent(query)}&`;
+        }
+        
+        // Add existing parameters from current URL
+        const currentParams = new URLSearchParams(window.location.search);
+        
+        // List of parameters to keep
+        const keepParams = ['min_price', 'max_price', 'min_rating', 'availability', 'sort_by', 'page'];
+        
+        // Add existing parameters (unless overridden by new params)
+        keepParams.forEach(param => {
+            if (params[param] !== undefined) {
+                // Use new parameter value
+                url += `${param}=${encodeURIComponent(params[param])}&`;
+            } else if (currentParams.get(param)) {
+                // Keep existing parameter
+                url += `${param}=${encodeURIComponent(currentParams.get(param))}&`;
+            }
+        });
+        
+        // Remove trailing '&' and redirect
+        window.location.href = url.slice(0, -1);
+    }
+    
+    // Apply filters
+    function applyFilters() {
+        const params = {};
+        
+        // Get price filters
+        const minPrice = document.getElementById('minPrice').value;
+        const maxPrice = document.getElementById('maxPrice').value;
+        
+        if (minPrice && minPrice > 0) {
+            params.min_price = minPrice;
+        }
+        
+        if (maxPrice && maxPrice < 1000) {
+            params.max_price = maxPrice;
+        }
+        
+        // Get rating filter
+        const rating = document.querySelector('input[name="rating"]:checked');
+        if (rating && rating.value) {
+            params.min_rating = rating.value;
+        }
+        
+        // Get availability filter
+        const availability = document.querySelector('input[name="availability"]:checked');
+        if (availability && availability.value) {
+            params.availability = availability.value;
+        }
+        
+        // Reset to page 1 when applying filters
+        params.page = '1';
+        
+        buildUrl(params);
+    }
+    
+    // Apply sort
+    function applySort() {
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            buildUrl({
+                sort_by: sortSelect.value,
+                page: '1' // Go to first page when sorting
+            });
+        }
+    }
+    
+    // Go to specific page
+    function goToPage(pageNum) {
+        buildUrl({ page: pageNum });
+    }
+    
+    // Clear filters (keep only search query)
+    function clearFilters() {
+        window.location.href = '?q={{ query|escapejs }}';
+    }
+    
+    // Clear all filters including search
+    function clearAllFilters() {
+        window.location.href = '{% url "product_list" %}';
+    }
+    
+    // Toggle all categories
+    function toggleAllCategories() {
+        const allCheckbox = document.getElementById('catAll');
+        const categoryCheckboxes = document.querySelectorAll('.category-checkbox');
+        
+        categoryCheckboxes.forEach(cb => {
+            cb.checked = !allCheckbox.checked;
+        });
+    }
+    
+    // Initialize form on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set initial category checkboxes based on URL
+        const currentParams = new URLSearchParams(window.location.search);
+        const categories = currentParams.get('categories');
+        
+        if (categories) {
+            const catIds = categories.split(',');
+            catIds.forEach(id => {
+                const checkbox = document.getElementById(`cat${id}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            // Uncheck "All Categories" if specific categories are selected
+            const allCheckbox = document.getElementById('catAll');
+            if (allCheckbox) {
+                allCheckbox.checked = false;
+            }
+        }
+    });
+</script>
+{% endblock %}

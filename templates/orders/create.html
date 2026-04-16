@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Order - TechStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h2 class="mb-4">Create Order</h2>
+                    
+                    <!-- Order Steps -->
+                    <div class="steps mb-5">
+                        <div class="step active">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Cart</div>
+                        </div>
+                        <div class="step active">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Shipping</div>
+                        </div>
+                        <div class="step active">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Payment</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-label">Confirmation</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Summary -->
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Order Items</h5>
+                                    
+                                    {% if cart_items %}
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Product</th>
+                                                    <th>Price</th>
+                                                    <th>Quantity</th>
+                                                    <th>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in cart_items %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="{{ item.product.image.url|default:'https://via.placeholder.com/50' }}" 
+                                                                 alt="{{ item.product.name }}" width="50" class="me-3">
+                                                            <div>
+                                                                <h6 class="mb-0">{{ item.product.name }}</h6>
+                                                                <small class="text-muted">SKU: {{ item.product.sku }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>${{ item.price }}</td>
+                                                    <td>{{ item.quantity }}</td>
+                                                    <td>${{ item.total_price }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Your cart is empty.</p>
+                                        <a href="{% url 'product_list' %}" class="btn btn-primary-custom">
+                                            Continue Shopping
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Shipping Information -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Shipping Information</h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">First Name *</label>
+                                            <input type="text" class="form-control" name="first_name" 
+                                                   value="{{ user.first_name }}" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Last Name *</label>
+                                            <input type="text" class="form-control" name="last_name" 
+                                                   value="{{ user.last_name }}" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Email *</label>
+                                        <input type="email" class="form-control" name="email" 
+                                               value="{{ user.email }}" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Phone *</label>
+                                        <input type="tel" class="form-control" name="phone" 
+                                               value="{{ user.phone }}" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Address *</label>
+                                        <textarea class="form-control" name="address" rows="3" required>{{ user.address }}</textarea>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">City *</label>
+                                            <input type="text" class="form-control" name="city" 
+                                                   value="{{ user.city }}" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">State *</label>
+                                            <input type="text" class="form-control" name="state" 
+                                                   value="{{ user.state }}" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">ZIP Code *</label>
+                                            <input type="text" class="form-control" name="zip_code" 
+                                                   value="{{ user.zip_code }}" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Country *</label>
+                                            <select class="form-select" name="country" required>
+                                                <option value="">Select Country</option>
+                                                <option value="US" {% if user.country == 'US' %}selected{% endif %}>United States</option>
+                                                <option value="NG" {% if user.country == 'NG' %}selected{% endif %}>Nigeria</option>
+                                                <option value="GH" {% if user.country == 'GH' %}selected{% endif %}>Ghana</option>
+                                                <option value="KE" {% if user.country == 'KE' %}selected{% endif %}>Kenya</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="saveAddress">
+                                        <label class="form-check-label" for="saveAddress">
+                                            Save this address for future orders
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Shipping Method -->
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Shipping Method</h5>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="shipping_method" 
+                                               id="standard" value="standard" checked>
+                                        <label class="form-check-label" for="standard">
+                                            Standard Shipping (3-7 business days)
+                                            {% if cart_total > 50 %}
+                                            <span class="float-end text-success">FREE</span>
+                                            {% else %}
+                                            <span class="float-end">$5.99</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="shipping_method" 
+                                               id="express" value="express">
+                                        <label class="form-check-label" for="express">
+                                            Express Shipping (1-2 business days)
+                                            <span class="float-end">$12.99</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="shipping_method" 
+                                               id="overnight" value="overnight">
+                                        <label class="form-check-label" for="overnight">
+                                            Overnight Shipping
+                                            <span class="float-end">$24.99</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Order Summary Sidebar -->
+                        <div class="col-lg-4">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Order Summary</h5>
+                                    
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Subtotal</span>
+                                        <span>${{ cart_total }}</span>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Shipping</span>
+                                        <span id="shippingCost">
+                                            {% if cart_total > 50 %}FREE{% else %}$5.99{% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Tax</span>
+                                        <span>${{ cart_tax|floatformat:2 }}</span>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between mb-3">
+                                        <span>Discount</span>
+                                        <span class="text-success">-${{ cart_discount|floatformat:2 }}</span>
+                                    </div>
+                                    
+                                    <hr>
+                                    
+                                    <div class="d-flex justify-content-between mb-4">
+                                        <strong>Total</strong>
+                                        <strong class="h4 text-primary-custom" id="grandTotal">
+                                            ${{ cart_grand_total|floatformat:2 }}
+                                        </strong>
+                                    </div>
+                                    
+                                    <!-- Payment Method -->
+                                    <div class="mb-4">
+                                        <label class="form-label">Payment Method *</label>
+                                        <select class="form-select" name="payment_method" id="paymentMethod" required>
+                                            <option value="">Select Payment Method</option>
+                                            <option value="card">Credit/Debit Card</option>
+                                            <option value="paypal">PayPal</option>
+                                            <option value="paystack">Paystack</option>
+                                            <option value="momo">Mobile Money</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Terms Agreement -->
+                                    <div class="form-check mb-4">
+                                        <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                                        <label class="form-check-label" for="agreeTerms">
+                                            I agree to the <a href="/terms/">Terms and Conditions</a>
+                                        </label>
+                                    </div>
+                                    
+                                    <!-- Place Order Button -->
+                                    <button type="submit" class="btn btn-primary-custom btn-lg w-100">
+                                        <i class="fas fa-lock me-2"></i>Place Order
+                                    </button>
+                                    
+                                    <!-- Security Badge -->
+                                    <div class="text-center mt-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-shield-alt me-2"></i>Secure SSL Encryption
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Help Section -->
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Need Help?</h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li class="mb-2">
+                                            <i class="fas fa-phone me-2"></i>
+                                            <small>1-800-TECH-HELP</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <i class="fas fa-envelope me-2"></i>
+                                            <small>support@techstore.com</small>
+                                        </li>
+                                        <li>
+                                            <i class="fas fa-comment me-2"></i>
+                                            <small>Live Chat Available</small>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+    }
+    
+    .steps::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: #e9ecef;
+        z-index: 1;
+    }
+    
+    .step {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        flex: 1;
+    }
+    
+    .step.active .step-number {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .step.active .step-label {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: white;
+        border: 2px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-weight: 600;
+    }
+    
+    .step-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+
+<script>
+    // Update shipping cost when shipping method changes
+    document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
+        radio.addEventListener('change', updateTotals);
+    });
+    
+    function updateTotals() {
+        const shippingMethod = document.querySelector('input[name="shipping_method"]:checked').value;
+        let shippingCost = 0;
+        
+        if (shippingMethod === 'express') {
+            shippingCost = 12.99;
+        } else if (shippingMethod === 'overnight') {
+            shippingCost = 24.99;
+        } else if ({{ cart_total }} <= 50) {
+            shippingCost = 5.99;
+        }
+        
+        // Update shipping cost display
+        const shippingCostElement = document.getElementById('shippingCost');
+        shippingCostElement.textContent = shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`;
+        
+        // Update grand total
+        const subtotal = {{ cart_total }};
+        const tax = {{ cart_tax }};
+        const discount = {{ cart_discount }};
+        const grandTotal = subtotal + shippingCost + tax - discount;
+        
+        document.getElementById('grandTotal').textContent = `$${grandTotal.toFixed(2)}`;
+    }
+    
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const agreeCheckbox = document.getElementById('agreeTerms');
+        
+        form.addEventListener('submit', function(event) {
+            if (!agreeCheckbox.checked) {
+                event.preventDefault();
+                alert('You must agree to the terms and conditions to place your order.');
+                agreeCheckbox.focus();
+            }
+        });
+        
+        // Initialize totals
+        updateTotals();
+    });
+</script>
+{% endblock %}

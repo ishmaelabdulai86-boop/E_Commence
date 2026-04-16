@@ -1,0 +1,216 @@
+<!-- payments/templates/payments/history.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Payment History - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Payment History</h1>
+            <p class="text-muted">View all your payment transactions</p>
+        </div>
+        <div>
+            <span class="badge bg-primary fs-6">
+                Total Paid: ${{ total_paid|floatformat:2|intcomma }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Status</option>
+                        {% for status in status_choices %}
+                        <option value="{{ status.0 }}" {% if request.GET.status == status.0 %}selected{% endif %}>
+                            {{ status.1 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="method" class="form-label">Payment Method</label>
+                    <select name="method" id="method" class="form-select">
+                        <option value="">All Methods</option>
+                        {% for method in method_choices %}
+                        <option value="{{ method.0 }}" {% if request.GET.method == method.0 %}selected{% endif %}>
+                            {{ method.1 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" 
+                           value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" 
+                           value="{{ request.GET.date_to }}">
+                </div>
+                <div class="col-12">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i>Filter
+                        </button>
+                        <a href="{% url 'payment_history' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment List -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if payments %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Payment ID</th>
+                            <th>Order #</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <code class="text-primary">{{ payment.payment_id|truncatechars:12 }}</code>
+                            </td>
+                            <td>
+                                {% if payment.order %}
+                                <a href="{% url 'order_detail' payment.order.order_number %}" 
+                                   class="text-decoration-none">
+                                    {{ payment.order.order_number }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>${{ payment.amount|floatformat:2 }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ payment.get_payment_method_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if payment.is_successful %}
+                                <span class="badge bg-success">Paid</span>
+                                {% elif payment.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% elif payment.status == 'refunded' %}
+                                <span class="badge bg-warning">Refunded</span>
+                                {% elif payment.status == 'pending' %}
+                                <span class="badge bg-secondary">Pending</span>
+                                {% else %}
+                                <span class="badge bg-info">{{ payment.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" data-bs-toggle="dropdown">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'payment_detail' payment.payment_id %}">
+                                                <i class="fas fa-eye me-2"></i>View Details
+                                            </a>
+                                        </li>
+                                        {% if payment.order %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'order_detail' payment.order.order_number %}">
+                                                <i class="fas fa-shopping-bag me-2"></i>View Order
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        {% if payment.is_refundable %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'payment_detail' payment.payment_id %}#refund">
+                                                <i class="fas fa-undo me-2"></i>Request Refund
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <i class="fas fa-receipt fa-3x text-muted"></i>
+                </div>
+                <h5 class="text-muted">No payments found</h5>
+                <p class="text-muted">You haven't made any payments yet.</p>
+                <a href="{% url 'shop' %}" class="btn btn-primary">
+                    <i class="fas fa-shopping-cart me-2"></i>Start Shopping
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if payments.has_other_pages %}
+    <nav aria-label="Payment pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if payments.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ payments.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for num in payments.paginator.page_range %}
+                {% if payments.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if payments.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ payments.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

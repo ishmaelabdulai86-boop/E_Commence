@@ -1,0 +1,32 @@
+YOUR ORDER HAS BEEN DELIVERED!
+===============================
+
+Hi {{ customer_name }},
+
+Excellent! Your order has been successfully delivered. We hope you enjoy your purchase!
+
+ORDER DELIVERED
+===============
+Order Number: {{ order.order_number }}
+Order Date: {{ order.created_at|date:"F d, Y" }}
+Total Amount: ${{ order.total_amount|floatformat:2 }}
+Delivered On: Today
+
+SHARE YOUR FEEDBACK
+===================
+We'd love to hear about your experience! Your reviews help us improve our service.
+
+You can leave a review on your order page.
+
+HAVING AN ISSUE?
+================
+If there's any problem with your order, please don't hesitate to contact us. We're here to help!
+
+CONTACT US
+==========
+📧 Email: support@techstore.com
+🌐 Website: https://www.techstore.com
+
+Thank you for choosing TechStore!
+
+© {% now "Y" %} TechStore. All rights reserved.

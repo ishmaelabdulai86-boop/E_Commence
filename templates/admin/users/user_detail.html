@@ -1,0 +1,1007 @@
+<!-- templates/admin/users/user_detail.html -->
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}User Details - {{ user_obj.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-user me-2"></i>User Details
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{% url 'analytics:analytics_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'users:admin_user_list' %}">Users</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ user_obj.username }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{% url 'users:admin_user_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Users
+            </a>
+            <a href="{% url 'users:admin_user_edit' user_obj.pk %}" class="btn btn-primary ms-2">
+                <i class="fas fa-edit me-1"></i>Edit User
+            </a>
+        </div>
+    </div>
+
+    <!-- User Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-shopping-bag fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Orders</h6>
+                            <h3 class="mb-0 fw-bold">{{ order_stats.total_orders|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-dollar-sign fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Spent</h6>
+                            <h3 class="mb-0 fw-bold">${{ order_stats.total_spent|floatformat:2|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-star fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Avg Order Value</h6>
+                            <h3 class="mb-0 fw-bold">
+                                {% if order_stats.total_orders > 0 %}
+                                ${{ order_stats.avg_order_value|floatformat:2|intcomma }}
+                                {% else %}
+                                $0.00
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-calendar-alt fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Last Order</h6>
+                            <h3 class="mb-0 fw-bold">
+                                {% if order_stats.last_order %}
+                                {{ order_stats.last_order.created_at|date:"M d, Y" }}
+                                {% else %}
+                                Never
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- User Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-info-circle me-2"></i>Profile Information
+                    </h6>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'users:admin_user_edit' user_obj.pk %}">
+                                    <i class="fas fa-edit me-2"></i>Edit Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="mailto:{{ user_obj.email }}">
+                                    <i class="fas fa-envelope me-2"></i>Send Email
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'users:admin_user_delete' user_obj.pk %}">
+                                    <i class="fas fa-trash me-2"></i>Delete User
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% if user_obj.profile_picture_url %}
+                        <img src="{{ user_obj.profile_picture_url }}" 
+                             alt="{{ user_obj.username }}" 
+                             class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover;">
+                        {% else %}
+                        <div class="avatar-initials bg-primary-gradient text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" 
+                             style="width: 120px; height: 120px; font-size: 2.5rem; font-weight: bold;">
+                            {{ user_obj.username|first|upper }}
+                        </div>
+                        {% endif %}
+                        <h4 class="mb-1">{{ user_obj.get_full_name|default:user_obj.username }}</h4>
+                        <p class="text-muted mb-3">@{{ user_obj.username }}</p>
+                        <div class="mb-3">
+                            <span class="badge bg-{% if user_obj.role == 'admin' %}danger{% elif user_obj.role == 'seller' %}warning{% else %}info{% endif %} fs-6">
+                                {{ user_obj.get_role_display }}
+                            </span>
+                            {% if user_obj.is_staff %}
+                            <span class="badge bg-warning ms-1">Staff</span>
+                            {% endif %}
+                            {% if user_obj.is_superuser %}
+                            <span class="badge bg-danger ms-1">Superuser</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small">Account Status</label>
+                            <div>
+                                {% if user_obj.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle me-1"></i>Active
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle me-1"></i>Inactive
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small">Verification</label>
+                            <div class="d-flex gap-1">
+                                {% if user_obj.email_verified %}
+                                <span class="badge bg-success" title="Email Verified">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary" title="Email Not Verified">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                {% endif %}
+                                
+                                {% if user_obj.phone_verified %}
+                                <span class="badge bg-success" title="Phone Verified">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                {% elif user_obj.phone %}
+                                <span class="badge bg-secondary" title="Phone Not Verified">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Email</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-envelope text-muted me-2"></i>
+                            <span>{{ user_obj.email|default:"Not set" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Phone</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-phone text-muted me-2"></i>
+                            <span>{{ user_obj.phone|default:"Not set" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Joined Date</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar-plus text-muted me-2"></i>
+                            <span>{{ user_obj.date_joined|date:"F j, Y, g:i a" }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Last Login</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-sign-in-alt text-muted me-2"></i>
+                            <span>
+                                {% if user_obj.last_login %}
+                                {{ user_obj.last_login|date:"F j, Y, g:i a" }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if order_stats.last_order %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Last Purchase</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-shopping-cart text-muted me-2"></i>
+                            <span>{{ order_stats.last_order.created_at|date:"F j, Y" }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-users text-muted me-2"></i>Member Since</span>
+                        <strong>{{ user_obj.date_joined|date:"M d, Y" }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-clock text-muted me-2"></i>Last Active</span>
+                        <strong>
+                            {% if user_obj.last_login %}
+                            {{ user_obj.last_login|timesince }} ago
+                            {% else %}
+                            Never
+                            {% endif %}
+                        </strong>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Account Status Card -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user-cog me-2"></i>Account Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Account Status</label>
+                        <div>
+                            {% if user_obj.is_active %}
+                            <span class="badge bg-success p-2 d-inline-flex align-items-center">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span>Active Account</span>
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger p-2 d-inline-flex align-items-center">
+                                <i class="fas fa-times-circle me-2"></i>
+                                <span>Inactive Account</span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Permissions</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if user_obj.is_staff %}
+                            <span class="badge bg-warning">Staff Member</span>
+                            {% endif %}
+                            {% if user_obj.is_superuser %}
+                            <span class="badge bg-danger">Superuser</span>
+                            {% endif %}
+                            {% if not user_obj.is_staff and not user_obj.is_superuser %}
+                            <span class="badge bg-secondary">Regular User</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Tabs -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <ul class="nav nav-tabs card-header-tabs" id="userTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#orders" type="button" role="tab">
+                                <i class="fas fa-shopping-bag me-2"></i>Orders ({{ orders.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#reviews" type="button" role="tab">
+                                <i class="fas fa-star me-2"></i>Reviews ({{ reviews.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="wishlist-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#wishlist" type="button" role="tab">
+                                <i class="fas fa-heart me-2"></i>Wishlist ({{ wishlist_items.count }})
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="userTabsContent">
+                        <!-- Orders Tab -->
+                        <div class="tab-pane fade show active" id="orders" role="tabpanel">
+                            {% if orders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Order #</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Amount</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in orders %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ order.order_number }}</strong>
+                                            </td>
+                                            <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                <span class="badge bg-{% if order.status == 'delivered' %}success
+                                                           {% elif order.status == 'pending' %}warning
+                                                           {% elif order.status == 'processing' %}primary
+                                                           {% elif order.status == 'cancelled' %}danger
+                                                           {% else %}secondary{% endif %}">
+                                                    {{ order.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end">${{ order.total_amount|floatformat:2 }}</td>
+                                            <td>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-primary view-order-btn"
+                                                        data-order-number="{{ order.order_number }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-shopping-bag fa-2x mb-3"></i>
+                                <p>No orders found</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Reviews Tab -->
+                        <div class="tab-pane fade" id="reviews" role="tabpanel">
+                            {% if reviews %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Rating</th>
+                                            <th>Review</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for review in reviews %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ review.product.get_absolute_url }}" class="text-decoration-none">
+                                                    {{ review.product.name|truncatechars:30 }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <div class="text-warning">
+                                                    {% for i in "12345" %}
+                                                        {% if forloop.counter <= review.rating %}
+                                                            <i class="fas fa-star"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </td>
+                                            <td>{{ review.comment|truncatechars:50|default:"No comment" }}</td>
+                                            <td>{{ review.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if review.is_approved %}
+                                                <span class="badge bg-success">Approved</span>
+                                                {% else %}
+                                                <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-star fa-2x mb-3"></i>
+                                <p>No reviews found</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Wishlist Tab -->
+                        <div class="tab-pane fade" id="wishlist" role="tabpanel">
+                            {% if wishlist_items %}
+                            <div class="row g-3">
+                                {% for item in wishlist_items %}
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="row g-0">
+                                            <div class="col-4">
+                                                {% if item.product.image %}
+                                                <img src="{{ item.product.image.url }}" 
+                                                     alt="{{ item.product.name }}"
+                                                     class="img-fluid rounded-start" 
+                                                     style="height: 100px; object-fit: cover;">
+                                                {% else %}
+                                                <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                                    <i class="fas fa-box text-muted fa-2x"></i>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-8">
+                                                <div class="card-body p-3">
+                                                    <h6 class="card-title mb-1">{{ item.product.name|truncatechars:30 }}</h6>
+                                                    <p class="card-text mb-1">
+                                                        <strong>${{ item.product.price|floatformat:2 }}</strong>
+                                                    </p>
+                                                    <small class="text-muted">Added {{ item.created_at|timesince }} ago</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4 text-muted">
+                                <i class="fas fa-heart fa-2x mb-3"></i>
+                                <p>Wishlist is empty</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information -->
+            {% if user.address or user.city or user.state or user.country %}
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-map-marker-alt me-2"></i>Address Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if user.address %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small">Address</label>
+                            <p class="mb-0">{{ user.address }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.city %}
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label text-muted small">City</label>
+                            <p class="mb-0">{{ user.city }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.state %}
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label text-muted small">State</label>
+                            <p class="mb-0">{{ user.state }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.country %}
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label text-muted small">Country</label>
+                            <p class="mb-0">{{ user.country }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.zip_code %}
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label text-muted small">ZIP Code</label>
+                            <p class="mb-0">{{ user.zip_code }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Order Detail Modal -->
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailModalLabel">
+                        <i class="fas fa-shopping-bag me-2"></i>
+                        Order Details: <span id="modalOrderNumber"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="orderModalContent">
+                    <!-- Order details will be loaded here via AJAX -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading order details...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Close
+                    </button>
+                    <a href="#" id="downloadInvoiceLink" class="btn btn-outline-primary">
+                        <i class="fas fa-download me-1"></i> Invoice
+                    </a>
+                    <a href="#" id="fullDetailLink" class="btn btn-primary" target="_blank">
+                        <i class="fas fa-external-link-alt me-1"></i> Full Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* CSS Variables */
+    :root {
+        --primary-color: #6366f1;
+        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        --info-gradient: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+        --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+        --card-bg: #ffffff;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --border-color: #e5e7eb;
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        --radius-lg: 12px;
+        --radius-md: 8px;
+        --radius-sm: 6px;
+    }
+
+    /* Modern Stat Cards - Gradient Style */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Ensure Font Awesome icons are properly sized */
+    .icon-circle i {
+        font-size: inherit !important;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    .icon-circle .fa-fw {
+        width: auto;
+    }
+
+    .icon-circle .fa-xl {
+        font-size: 1.5em !important;
+        line-height: 0.04167em;
+        vertical-align: -0.125em;
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: var(--primary-gradient) !important;
+    }
+    
+    .bg-success-gradient {
+        background: var(--success-gradient) !important;
+    }
+    
+    .bg-info-gradient {
+        background: var(--info-gradient) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: var(--warning-gradient) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: var(--primary-gradient); }
+    .stat-card:nth-child(2)::before { background: var(--success-gradient); }
+    .stat-card:nth-child(3)::before { background: var(--info-gradient); }
+    .stat-card:nth-child(4)::before { background: var(--warning-gradient); }
+
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Nav tabs styling */
+    .nav-tabs .nav-link {
+        border: none;
+        color: var(--text-secondary);
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        position: relative;
+    }
+
+    .nav-tabs .nav-link:hover {
+        color: var(--primary-color);
+    }
+
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        background: transparent;
+    }
+
+    .nav-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary-gradient);
+        border-radius: 3px 3px 0 0;
+    }
+
+    /* Avatar styling */
+    .avatar-initials {
+        font-size: 2.5rem;
+    }
+
+    /* Badge styling */
+    .badge {
+        padding: 0.35em 0.65em;
+        font-weight: 600;
+        border-radius: 50px;
+    }
+
+    /* List group styling */
+    .list-group-item {
+        border-color: var(--border-color);
+        padding: 0.75rem 1rem;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Modal styling */
+    #orderDetailModal .modal-dialog {
+        max-width: 800px;
+    }
+
+    #orderDetailModal .modal-content {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    #orderDetailModal .modal-header {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 1rem 1.5rem;
+        border-bottom: none;
+    }
+
+    #orderDetailModal .modal-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    #orderDetailModal .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.8;
+    }
+
+    #orderDetailModal .btn-close:hover {
+        opacity: 1;
+    }
+
+    #orderDetailModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    #orderDetailModal .modal-footer {
+        border-top: 1px solid #e5e7eb;
+        padding: 1rem 1.5rem;
+    }
+
+    #orderDetailModal .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 8px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-xl-3 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 110px;
+        }
+        .icon-circle {
+            width: 52px;
+            height: 52px;
+            font-size: 1.4rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.4rem;
+        }
+        .avatar-initials {
+            width: 80px !important;
+            height: 80px !important;
+            font-size: 1.75rem !important;
+        }
+        
+        #orderDetailModal .modal-dialog {
+            margin: 0.5rem;
+        }
+        
+        #orderDetailModal .modal-body {
+            padding: 1rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-xl-3 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+        .avatar-initials {
+            width: 70px !important;
+            height: 70px !important;
+            font-size: 1.5rem !important;
+        }
+    }
+
+    /* Table styling */
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+    }
+    
+    .card-header {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Product card hover effect */
+    .card.border-0.shadow-sm {
+        transition: transform 0.2s ease;
+    }
+    
+    .card.border-0.shadow-sm:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tabs
+        const triggerTabList = document.querySelectorAll('#userTabs button')
+        triggerTabList.forEach(triggerEl => {
+            const tabTrigger = new bootstrap.Tab(triggerEl)
+            
+            triggerEl.addEventListener('click', event => {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        });
+
+        // Add animation to cards
+        const statCards = document.querySelectorAll('.stat-card');
+        statCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = 'var(--shadow-xl)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'var(--shadow)';
+            });
+        });
+
+        // Add hover effect to product cards
+        const productCards = document.querySelectorAll('.card.border-0.shadow-sm');
+        productCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = 'var(--shadow-xl)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'var(--shadow)';
+            });
+        });
+
+        // Handle view order button click in the orders tab
+        $('#orders').on('click', '.view-order-btn', function(e) {
+            e.preventDefault();
+            var orderNumber = $(this).data('order-number');
+            
+            console.log('Opening order modal for:', orderNumber);
+            
+            // Update modal title
+            $('#modalOrderNumber').text(orderNumber);
+            
+            // Update full details link
+            $('#fullDetailLink').attr('href', '{% url "orders:admin_order_detail" "ORDER_NUM" %}'.replace('ORDER_NUM', orderNumber));
+            
+            // Update download invoice link
+            $('#downloadInvoiceLink').attr('href', '{% url "orders:download_invoice" "ORDER_NUM" %}'.replace('ORDER_NUM', orderNumber));
+            
+            // Load order details via AJAX
+            $.ajax({
+                url: '{% url "orders:admin_order_detail_modal" "ORDER_NUM" %}'.replace('ORDER_NUM', orderNumber),
+                type: 'GET',
+                success: function(data) {
+                    $('#orderModalContent').html(data);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading order:', error);
+                    $('#orderModalContent').html(`
+                        <div class="alert alert-danger m-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Failed to load order details. Please try again.
+                            <p class="mt-2 small">Error: ${error}</p>
+                        </div>
+                    `);
+                }
+            });
+            
+            // Show modal
+            var orderModal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+            orderModal.show();
+        });
+    });
+</script>
+{% endblock %}

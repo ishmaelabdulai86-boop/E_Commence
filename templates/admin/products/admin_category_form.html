@@ -1,0 +1,551 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #6366f1;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --light: #f8fafc;
+        --border: #e2e8f0;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .form-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .form-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 2px solid var(--light);
+    }
+
+    .form-card-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .form-card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+    }
+
+    .form-card-subtitle {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+
+    .required {
+        color: var(--danger);
+    }
+
+    .form-control {
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        outline: none;
+    }
+
+    .form-text {
+        display: block;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .error-message {
+        color: var(--danger);
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .error-message::before {
+        content: '⚠ ';
+        margin-right: 0.25rem;
+    }
+
+    .upload-area {
+        border: 2px dashed var(--primary);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+        transition: all 0.3s ease;
+    }
+
+    .upload-area:hover {
+        border-color: #8b5cf6;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    }
+
+    .upload-icon {
+        font-size: 2.5rem;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .upload-text {
+        margin: 0;
+        color: #1f2937;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .upload-subtext {
+        margin: 0.25rem 0 0 0;
+        color: #6b7280;
+        font-size: 0.85rem;
+    }
+
+    #categoryImage {
+        display: none;
+    }
+
+    .image-preview {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: var(--light);
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .image-preview img {
+        max-width: 150px;
+        max-height: 150px;
+        object-fit: contain;
+        border-radius: 6px;
+        border: 2px solid var(--border);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: var(--light);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-right: 0.75rem;
+        cursor: pointer;
+        border: 2px solid var(--border);
+        border-radius: 4px;
+        accent-color: var(--primary);
+    }
+
+    .form-check-label {
+        margin: 0;
+        cursor: pointer;
+        font-weight: 500;
+        color: #374151;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn {
+        padding: 0.75rem 2rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-outline-secondary {
+        border: 2px solid var(--border);
+        color: #6b7280;
+        background: white;
+    }
+
+    .btn-outline-secondary:hover {
+        background: var(--light);
+        border-color: #6b7280;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        margin-left: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .form-card {
+            padding: 1.5rem;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">
+                {{ title }}
+                <span class="badge">Category Management</span>
+            </h1>
+        </div>
+        <div>
+            <a href="{% url 'products:admin_category_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Categories
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="border-radius: 8px;">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Form -->
+    <form method="post" enctype="multipart/form-data" id="categoryForm" novalidate>
+        {% csrf_token %}
+
+        <!-- Basic Information -->
+        <div class="form-card">
+            <div class="form-card-header">
+                <div class="form-card-icon">
+                    <i class="fas fa-folder"></i>
+                </div>
+                <div>
+                    <h3 class="form-card-title">Category Details</h3>
+                    <p class="form-card-subtitle">Basic information about your category</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        Category Name
+                        <span class="required">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div class="error-message">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Parent Category</label>
+                    {{ form.parent }}
+                    <span class="form-text">Leave empty for main category</span>
+                    {% if form.parent.errors %}
+                    <div class="error-message">{{ form.parent.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <div class="error-message">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Media & Icon -->
+        <div class="form-card">
+            <div class="form-card-header">
+                <div class="form-card-icon" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%);">
+                    <i class="fas fa-image"></i>
+                </div>
+                <div>
+                    <h3 class="form-card-title">Media & Icon</h3>
+                    <p class="form-card-subtitle">Add category image and icon</p>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <!-- Image Upload -->
+                <div class="form-group">
+                    <label class="form-label">Category Image</label>
+                    <div class="upload-area" onclick="document.getElementById('categoryImage').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <p class="upload-text">Click to Upload</p>
+                        <p class="upload-subtext">PNG, JPG up to 10MB</p>
+                        <input type="file" id="categoryImage" name="image" accept="image/*" onchange="previewImage(event)">
+                    </div>
+                    
+                    <!-- Current or Preview Image -->
+                    {% if category and category.image %}
+                    <div class="image-preview" id="imagePreviewContainer">
+                        <img src="{{ category.image.url }}" id="previewImage" alt="Category Image">
+                        <p class="form-text mt-2">Current image</p>
+                        <button type="button" class="btn btn-sm btn-outline-danger mt-2" 
+                                data-bs-toggle="modal" data-bs-target="#deleteCategoryImageModal"
+                                title="Delete current image">
+                            <i class="fas fa-trash me-1"></i> Delete Current Image
+                        </button>
+                        <!-- Delete Category Image Modal -->
+                        <div class="modal fade" id="deleteCategoryImageModal" tabindex="-1" role="dialog">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Delete Image</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="{{ category.image.url }}" alt="Category Image" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
+                                            <div>
+                                                <p class="mb-0"><strong>Remove this image?</strong></p>
+                                                <small class="text-muted">You can upload a new image to replace it.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-danger" onclick="deleteCategoryImage()">
+                                            <i class="fas fa-trash me-2"></i>Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="image-preview" id="imagePreviewContainer" style="display: none;">
+                        <img id="previewImage" alt="Preview">
+                        <p class="form-text mt-2">New image</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.image.errors %}
+                    <div class="error-message mt-2">{{ form.image.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Icon Class -->
+                <div class="form-group">
+                    <label class="form-label">Icon Class</label>
+                    {{ form.icon }}
+                    <span class="form-text">Font Awesome class (e.g., fas fa-laptop)</span>
+                    {% if form.icon.errors %}
+                    <div class="error-message">{{ form.icon.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="form-card">
+            <div class="form-card-header">
+                <div class="form-card-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <div>
+                    <h3 class="form-card-title">Status</h3>
+                    <p class="form-card-subtitle">Control category visibility</p>
+                </div>
+            </div>
+
+            <div class="form-check">
+                {{ form.is_active }}
+                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                    <i class="fas fa-eye me-2"></i> Active
+                </label>
+                {% if form.is_active.errors %}
+                <div class="error-message">{{ form.is_active.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="reset" class="btn btn-outline-secondary">
+                <i class="fas fa-redo me-2"></i> Reset Form
+            </button>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-2"></i> Save Category
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewImage(event) {
+    const file = event.target.files[0];
+    const container = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('previewImage');
+    
+    if (file && file.type.match('image.*')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            container.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+function deleteCategoryImage() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteCategoryImageModal'));
+    if (modal) modal.hide();
+    
+    // Clear the file input and hide preview
+    const fileInput = document.getElementById('categoryImage');
+    fileInput.value = '';
+    document.getElementById('imagePreviewContainer').style.display = 'none';
+    
+    // Mark the image field as empty (will require a new upload if needed)
+    showDeleteSuccess('Image marked for deletion');
+}
+
+// Show success notification
+function showDeleteSuccess(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form controls
+    const formControls = document.querySelectorAll('input:not([type="file"]):not([type="checkbox"]):not([type="hidden"]):not([type="radio"]), select, textarea');
+    formControls.forEach(control => {
+        if (!control.classList.contains('form-check-input') && !control.classList.contains('form-control')) {
+            control.classList.add('form-control');
+        }
+    });
+});
+</script>
+{% endblock %}

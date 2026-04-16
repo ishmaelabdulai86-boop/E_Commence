@@ -1,0 +1,606 @@
+<!-- templates/orders/checkout.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - TechStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== Modern Color Palette ===== */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --primary-soft: rgba(102, 126, 234, 0.05);
+        --primary-border: rgba(102, 126, 234, 0.15);
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --bg-light: #f9fafb;
+    }
+
+    /* ===== Page Header ===== */
+    .container > h1 {
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    /* ===== Cards - Modern Design ===== */
+    .card {
+        border: 1px solid var(--primary-border);
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .card .card-header {
+        background: var(--primary-gradient) !important;
+        color: white;
+        border: none;
+        padding: 20px 24px;
+        font-weight: 700;
+    }
+
+    .card .card-header h4,
+    .card .card-header h5 {
+        color: white;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .card .card-body {
+        padding: 24px;
+    }
+
+    /* ===== Form Styling ===== */
+    .form-label {
+        color: var(--text-primary);
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .form-control,
+    .form-select {
+        border: 1px solid var(--primary-border);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-weight: 500;
+        transition: all 0.3s ease;
+        padding: 12px 14px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.1);
+        color: var(--text-primary);
+    }
+
+    /* ===== Form Check (Radio/Checkbox) ===== */
+    .form-check {
+        padding: 14px;
+        margin-bottom: 12px;
+        border: 1px solid var(--primary-border);
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .form-check:hover {
+        background: var(--primary-soft);
+        border-color: #667eea;
+    }
+
+    .form-check-input {
+        border-color: var(--primary-border);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 20px;
+        height: 20px;
+        margin-top: 2px;
+    }
+
+    .form-check-input:checked {
+        background: var(--primary-gradient);
+        border-color: #667eea;
+    }
+
+    .form-check-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-check-label {
+        color: var(--text-primary);
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 0;
+        user-select: none;
+    }
+
+    .form-check small {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .form-check .text-success {
+        color: #10b981 !important;
+        font-weight: 700;
+    }
+
+    /* ===== Alert Styling ===== */
+    .alert {
+        border: 1px solid var(--primary-border);
+        border-radius: 12px;
+        background: var(--primary-soft);
+        color: #667eea;
+        font-weight: 500;
+        padding: 14px 16px;
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+        border-radius: 10px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        letter-spacing: 0.3px;
+        padding: 12px 20px;
+    }
+
+    .btn-primary-custom {
+        background: var(--primary-gradient);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    }
+
+    .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #5a52d4, #6d3a99);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .btn-primary-custom:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-outline-secondary {
+        color: #6b7280;
+        border: 2px solid var(--primary-border);
+        background: white;
+    }
+
+    .btn-outline-secondary:hover {
+        background: var(--text-secondary);
+        border-color: #6b7280;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    /* ===== Order Summary Section ===== */
+    .d-flex.justify-content-between {
+        padding: 10px 0;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .d-flex.justify-content-between strong {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .d-flex.justify-content-between .h5 {
+        font-weight: 800;
+        color: #667eea;
+    }
+
+    .d-flex.justify-content-between .text-success {
+        color: #10b981 !important;
+        font-weight: 700;
+    }
+
+    .d-flex.justify-content-between .text-muted {
+        color: var(--text-secondary) !important;
+        font-size: 0.9rem;
+    }
+
+    /* ===== Security Card ===== */
+    .card .text-success i {
+        color: #10b981;
+    }
+
+    .card h6 {
+        color: var(--text-primary);
+        font-weight: 700;
+    }
+
+    /* ===== Headings ===== */
+    h5 {
+        color: var(--text-primary) !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.3px !important;
+    }
+
+    h6 {
+        color: var(--text-primary) !important;
+        font-weight: 700 !important;
+    }
+
+    /* ===== HR Styling ===== */
+    hr {
+        background: var(--primary-border);
+        margin: 14px 0;
+    }
+
+    /* ===== Links ===== */
+    .text-primary-custom {
+        color: #667eea !important;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+
+    .text-primary-custom:hover {
+        color: #764ba2 !important;
+        text-decoration: underline;
+    }
+
+    /* ===== Small Text ===== */
+    small {
+        font-weight: 500;
+    }
+
+    small.text-muted {
+        color: var(--text-secondary) !important;
+    }
+
+    /* ===== Item List ===== */
+    .mb-3 {
+        margin-bottom: 1rem !important;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+        .card .card-body {
+            padding: 16px;
+        }
+
+        h5 {
+            font-size: 1.1rem !important;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Checkout Form -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary-custom text-white">
+                    <h4 class="mb-0">Checkout</h4>
+                </div>
+                <div class="card-body">
+                    <form id="checkoutForm" method="post" action="{% url 'orders:checkout_process' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Shipping Information -->
+                        <h5 class="mb-3">Shipping Information</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" name="first_name" class="form-control" required 
+                                       value="{{ user.first_name|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" name="last_name" class="form-control" required 
+                                       value="{{ user.last_name|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email *</label>
+                                <input type="email" name="email" class="form-control" required 
+                                       value="{{ user.email|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone *</label>
+                                <input type="tel" name="phone" class="form-control" required 
+                                       value="{{ user.phone|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Address *</label>
+                            <input type="text" name="address" class="form-control" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">City *</label>
+                                <input type="text" name="city" class="form-control" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">State *</label>
+                                <input type="text" name="state" class="form-control" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">ZIP Code *</label>
+                                <input type="text" name="zip_code" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Country *</label>
+                            <select name="country" class="form-select" required>
+                                <option value="">Select Country</option>
+                                <option value="US" selected>United States</option>
+                                <option value="UK">United Kingdom</option>
+                                <option value="CA">Canada</option>
+                                <option value="AU">Australia</option>
+                                <option value="IN">India</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Shipping Method -->
+                        <h5 class="mb-3 mt-4">Shipping Method</h5>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="shipping_method" 
+                                       id="standard" value="standard" checked>
+                                <label class="form-check-label" for="standard">
+                                    Standard Shipping (5-7 business days)
+                                    {% if cart_total|floatformat:2 > 50 %}
+                                    <span class="text-success">FREE</span>
+                                    {% else %}
+                                    <span>$5.99</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="shipping_method" 
+                                       id="express" value="express">
+                                <label class="form-check-label" for="express">
+                                    Express Shipping (2-3 business days) - $12.99
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="shipping_method" 
+                                       id="overnight" value="overnight">
+                                <label class="form-check-label" for="overnight">
+                                    Overnight Shipping (1 business day) - $24.99
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Method (Bypass) -->
+                        <h5 class="mb-3 mt-4">Payment Method</h5>
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Test Mode Active:</strong> All payments are simulated. No real payment required.
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" 
+                                       id="test" value="test" checked>
+                                <label class="form-check-label" for="test">
+                                    <i class="fas fa-vial me-2"></i>Test Payment (Auto-complete)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" 
+                                       id="cash" value="cash">
+                                <label class="form-check-label" for="cash">
+                                    <i class="fas fa-money-bill-wave me-2"></i>Cash on Delivery
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Terms and Conditions -->
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" class="text-primary-custom">Terms and Conditions</a> *
+                            </label>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary-custom btn-lg w-100" id="placeOrderBtn">
+                            <i class="fas fa-shopping-bag me-2"></i>Place Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Cart Items -->
+                    <div class="mb-3">
+                        <h6>Items</h6>
+                        {% for item in cart_items %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <small>{{ item.product.name|truncatechars:20 }}</small>
+                                <br>
+                                <small class="text-muted">Qty: {{ item.quantity }}</small>
+                            </div>
+                            <small>${{ item.total_price|floatformat:2 }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Order Totals -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Subtotal</span>
+                            <span>${{ cart_total }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Shipping</span>
+                            <span id="shippingCost">
+                                {% if cart_total|floatformat:2 > 50 %}
+                                <span class="text-success">FREE</span>
+                                {% else %}
+                                $5.99
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Tax (10%)</span>
+                            <span>${{ cart_tax|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Discount</span>
+                            <span class="text-success">-${{ cart_discount|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Total</strong>
+                        <strong class="h5 text-primary-custom" id="orderTotal">
+                            ${{ cart_grand_total|floatformat:2 }}
+                        </strong>
+                    </div>
+                    
+                    <!-- Back to Cart -->
+                    <a href="{% url 'cart:cart' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Security Info -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="text-center">
+                        <i class="fas fa-lock fa-2x text-success mb-2"></i>
+                        <h6>Secure Checkout</h6>
+                        <small class="text-muted">Your information is safe with us</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Shipping method prices
+    const SHIPPING_PRICES = {
+        'standard': { price: 5.99, free_above: 50 },
+        'express': { price: 12.99, free_above: null },
+        'overnight': { price: 24.99, free_above: null }
+    };
+
+    // Update shipping cost based on selection
+    function updateShippingCost() {
+        const selectedMethod = document.querySelector('input[name="shipping_method"]:checked').value;
+        const cartTotal = parseFloat('{{ cart_total|floatformat:2 }}') || 0;
+        const tax = parseFloat('{{ cart_tax|floatformat:2 }}') || 0;
+        const discount = parseFloat('{{ cart_discount|floatformat:2 }}') || 0;
+        
+        const shippingCost = document.getElementById('shippingCost');
+        const orderTotal = document.getElementById('orderTotal');
+        
+        let shipping = 0;
+        let shippingText = '';
+        
+        // Determine shipping cost
+        if (selectedMethod === 'standard') {
+            if (cartTotal < 50) {
+                shipping = 0;
+                shippingText = '<span class="text-success">FREE</span>';
+            } else {
+                shipping = SHIPPING_PRICES.standard.price;
+                shippingText = '$' + shipping.toFixed(2);
+            }
+        } else if (selectedMethod === 'express') {
+            shipping = SHIPPING_PRICES.express.price;
+            shippingText = '$' + shipping.toFixed(2);
+        } else if (selectedMethod === 'overnight') {
+            shipping = SHIPPING_PRICES.overnight.price;
+            shippingText = '$' + shipping.toFixed(2);
+        }
+        
+        // Update Order Summary
+        shippingCost.innerHTML = shippingText;
+        
+        // Calculate and update total
+        const total = cartTotal + shipping + tax - discount;
+        orderTotal.textContent = '$' + total.toFixed(2);
+    }
+
+    // Attach event listeners
+    document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
+        radio.addEventListener('change', updateShippingCost);
+    });
+
+    // Initialize shipping display on page load
+    document.addEventListener('DOMContentLoaded', updateShippingCost);
+    
+    // Handle form submission
+    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('placeOrderBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        submitBtn.disabled = true;
+        
+        // Collect form data
+        const formData = new FormData(this);
+        
+        fetch('{% url "orders:checkout_process" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to success page
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error: ' + data.message);
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            alert('Network error. Please try again.');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+</script>
+{% endblock %}

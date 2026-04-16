@@ -1,0 +1,586 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Manage Returns - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 gradient-text">Manage Returns</h1>
+        <a href="?export=csv" class="btn btn-primary">
+            <i class="fas fa-download me-2"></i> Export CSV
+        </a>
+    </div>
+
+    <!-- Stats Cards - Single Row -->
+    <div class="row mb-4">
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-undo fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Returns</h6>
+                            <h3 class="mb-0 fw-bold">{{ return_stats.total }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0 fw-bold">{{ return_stats.pending }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-cog fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Processing</h6>
+                            <h3 class="mb-0 fw-bold">{{ return_stats.processing|default:"0" }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Approved</h6>
+                            <h3 class="mb-0 fw-bold">{{ return_stats.approved }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-danger-gradient text-white me-3">
+                            <i class="fas fa-times-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Rejected</h6>
+                            <h3 class="mb-0 fw-bold">{{ return_stats.rejected }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-teal-gradient text-white me-3">
+                            <i class="fas fa-check-double fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Completed</h6>
+                            <h3 class="mb-0 fw-bold">{{ return_stats.completed }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold gradient-text">Quick Filters</h6>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">
+                    <i class="fas fa-clock me-1"></i> Pending ({{ return_stats.pending }})
+                </a>
+                <a href="?status=approved" class="btn btn-outline-info {% if request.GET.status == 'approved' %}active{% endif %}">
+                    <i class="fas fa-cog me-1"></i> Approved ({{ return_stats.approved }})
+                </a>
+                <a href="?status=rejected" class="btn btn-outline-danger {% if request.GET.status == 'rejected' %}active{% endif %}">
+                    <i class="fas fa-times me-1"></i> Rejected ({{ return_stats.rejected }})
+                </a>
+                <a href="?status=completed" class="btn btn-outline-success {% if request.GET.status == 'completed' %}active{% endif %}">
+                    <i class="fas fa-check-double me-1"></i> Completed ({{ return_stats.completed }})
+                </a>
+                <a href="?" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo me-1"></i> Clear Filters
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Returns Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold gradient-text">Return Requests</h6>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary">{{ returns.paginator.count }} Returns</span>
+                {% if return_stats.pending > 0 %}
+                <span class="badge bg-warning animate-pulse">{{ return_stats.pending }} Pending</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Return ID</th>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Product</th>
+                            <th>Reason</th>
+                            <th>Requested</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for return in returns %}
+                        <tr class="{% if return.status == 'pending' %}table-warning{% endif %}">
+                            <td>
+                                <strong class="text-primary">#{{ return.id }}</strong>
+                            </td>
+                            <td>
+                                <a href="{% url 'orders:admin_order_detail' return.order.order_number %}" 
+                                   class="text-decoration-none text-dark">
+                                    {{ return.order.order_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <strong>{{ return.user.username }}</strong>
+                                    <small class="text-muted">{{ return.user.email|truncatechars:20 }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if return.order_item.product.primary_image_url %}
+                                    <img src="{{ return.order_item.product.primary_image_url }}" 
+                                         alt="{{ return.order_item.product_name }}" 
+                                         class="rounded me-2" width="32" height="32" style="object-fit: cover;">
+                                    {% endif %}
+                                    <span>{{ return.order_item.product_name|truncatechars:30 }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    {{ return.get_reason_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ return.requested_at|date:"M d, Y" }}
+                                <br>
+                                <small class="text-muted">{{ return.requested_at|timesince }} ago</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if return.status == 'pending' %}warning
+                                               {% elif return.status == 'approved' or return.status == 'processing' %}info
+                                               {% elif return.status == 'rejected' %}danger
+                                               {% elif return.status == 'completed' %}success
+                                               {% else %}secondary{% endif %} 
+                                               px-3 py-2">
+                                    <i class="fas 
+                                        {% if return.status == 'pending' %}fa-clock
+                                        {% elif return.status == 'approved' %}fa-check
+                                        {% elif return.status == 'processing' %}fa-cog
+                                        {% elif return.status == 'rejected' %}fa-times
+                                        {% elif return.status == 'completed' %}fa-check-double
+                                        {% else %}fa-question{% endif %} 
+                                        me-1"></i>
+                                    {{ return.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'admin_return_detail' return.id %}" 
+                                       class="btn btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if return.status == 'pending' %}
+                                    <a href="{% url 'admin_return_approve' return.id %}" 
+                                       class="btn btn-outline-success" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    <a href="{% url 'admin_return_reject' return.id %}" 
+                                       class="btn btn-outline-danger" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-undo fa-3x text-muted mb-3"></i>
+                                    <h5 class="gradient-text">No return requests found</h5>
+                                    <p class="text-muted">All return requests are processed</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if returns.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if returns.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ returns.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in returns.paginator.page_range %}
+                    {% if returns.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if returns.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ returns.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Stat Cards */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.75rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+    
+    .bg-danger-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+    }
+    
+    .bg-teal-gradient {
+        background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%) !important;
+    }
+    
+    .bg-purple-gradient {
+        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(5)::before { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+    .stat-card:nth-child(6)::before { background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%); }
+
+    /* Text styling */
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Quick filters */
+    .btn-outline-warning.active {
+        background-color: #f59e0b;
+        color: white;
+        border-color: #f59e0b;
+    }
+    
+    .btn-outline-info.active {
+        background-color: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .btn-outline-danger.active {
+        background-color: #ef4444;
+        color: white;
+        border-color: #ef4444;
+    }
+    
+    .btn-outline-success.active {
+        background-color: #10b981;
+        color: white;
+        border-color: #10b981;
+    }
+
+    /* Table styling */
+    .table th {
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--border-color);
+        background-color: rgba(99, 102, 241, 0.05);
+        padding: 1.25rem 0.75rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 1.25rem 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .table-warning {
+        background-color: rgba(245, 158, 11, 0.05);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(99, 102, 241, 0.03);
+        transform: translateX(2px);
+        transition: all 0.2s ease;
+    }
+
+    /* Badges */
+    .badge {
+        padding: 0.5rem 0.85rem;
+        font-weight: 600;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
+    }
+
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 3rem 0;
+    }
+
+    /* Animation for page load */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stat-card {
+        animation: slideUp 0.4s ease-out forwards;
+        opacity: 0;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    .stat-card:nth-child(5) { animation-delay: 0.5s; }
+    .stat-card:nth-child(6) { animation-delay: 0.6s; }
+
+    /* Responsive adjustments for 6 cards in one row */
+    @media (max-width: 1400px) {
+        .col-xl-2 {
+            width: 25%;
+        }
+    }
+    
+    @media (max-width: 1200px) {
+        .col-xl-2 {
+            width: 33.333%;
+        }
+        .stat-card .card-body {
+            padding: 1.5rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .col-md-4 {
+            width: 33.333%;
+        }
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.4rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-md-4 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 100px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-md-4 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+        .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+        }
+    }
+</style>
+{% endblock %}

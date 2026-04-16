@@ -1,0 +1,615 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Success - TechStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== Modern Minimal Design ===== */
+    :root {
+        --accent: #3b82f6;
+        --accent-light: #eff6ff;
+        --success-color: #10b981;
+        --text-dark: #111827;
+        --text-light: #6b7280;
+        --border-color: #e5e7eb;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f0f9ff 0%, #fef3c7 100%);
+        min-height: 100vh;
+    }
+
+    .container {
+        background: transparent;
+    }
+
+    /* ===== Success Hero Section ===== */
+    .success-hero {
+        text-align: center;
+        padding: 40px 20px;
+        margin-bottom: 30px;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .success-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 30px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+        0% {
+            transform: scale(0);
+            opacity: 0;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .success-hero h1 {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: var(--text-dark);
+        margin-bottom: 10px;
+        letter-spacing: -1px;
+    }
+
+    .success-hero p {
+        font-size: 1.1rem;
+        color: var(--text-light);
+        margin: 0;
+        font-weight: 500;
+    }
+
+    /* ===== Order Info Cards ===== */
+    .order-info {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .info-item {
+        padding: 16px;
+        background: var(--accent-light);
+        border-radius: 12px;
+        border-left: 4px solid var(--accent);
+    }
+
+    .info-item strong {
+        display: block;
+        color: var(--accent);
+        font-weight: 700;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-item p {
+        margin: 0;
+        color: var(--text-dark);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    /* ===== Products Section ===== */
+    .products-section {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .products-section h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+    .products-section h3::before {
+        content: "📦";
+        margin-right: 12px;
+        font-size: 1.8rem;
+    }
+
+    .product-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+
+    .product-item:hover {
+        background: var(--accent-light);
+        border-color: var(--accent);
+        transform: translateX(4px);
+    }
+
+    .product-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .product-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #e0e7ff 0%, #f5d4ff 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        position: relative;
+    }
+
+    .product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .product-image img:not([src]),
+    .product-image img[src=""] {
+        display: none !important;
+    }
+
+    .product-image .placeholder {
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-details {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .product-info h6 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0 0 4px 0;
+    }
+
+    .product-info .sku {
+        font-size: 0.8rem;
+        color: var(--text-light);
+        margin: 0;
+    }
+
+    .product-price {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .product-price .qty {
+        font-size: 0.85rem;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+
+    .product-price .price {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--accent);
+    }
+
+    /* ===== Order Total ===== */
+    .order-total {
+        background: linear-gradient(135deg, #5e84c2 0%, #8ca0e2 100%);
+        border-radius: 16px;
+        padding: 28px;
+        margin-bottom: 24px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+
+    .total-row.grand-total {
+        border-top: 2px solid rgba(255, 255, 255, 0.3);
+        padding-top: 12px;
+        margin-top: 12px;
+        font-size: 1.4rem;
+        font-weight: 900;
+    }
+
+    /* ===== Next Steps Timeline ===== */
+    .next-steps {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .next-steps h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-bottom: 24px;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(to bottom, var(--accent), var(--success-color));
+    }
+
+    .timeline-item {
+        margin-bottom: 24px;
+        position: relative;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -38px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border: 3px solid var(--accent);
+        border-radius: 50%;
+    }
+
+    .timeline-item:last-child::before {
+        border-color: var(--success-color);
+    }
+
+    .timeline-dot {
+        font-size: 20px;
+        margin-right: 10px;
+        display: inline-block;
+    }
+
+    .timeline-item h6 {
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0 0 4px 0;
+        font-size: 0.95rem;
+    }
+
+    .timeline-item p {
+        margin: 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* ===== Buttons ===== */
+    .action-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .btn {
+        border: none;
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 14px 24px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #7999ce 0%, #6e85d1 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: white;
+        color: var(--accent);
+        border: 2px solid var(--accent);
+    }
+
+    .btn-secondary:hover {
+        background: var(--accent-light);
+        transform: translateY(-2px);
+        color: var(--accent);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+
+    /* ===== Shipping Card ===== */
+    .shipping-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .shipping-card h5 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin-bottom: 20px;
+    }
+
+    .shipping-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 20px;
+    }
+
+    .shipping-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .shipping-item p {
+        margin: 0 0 8px 0;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .shipping-item .value {
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .badge-status {
+        display: inline-block;
+        background: linear-gradient(135deg, #71d3b2 0%, #185e48 100%);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+        .success-hero h1 {
+            font-size: 1.8rem;
+        }
+
+        .products-section,
+        .next-steps,
+        .shipping-card {
+            padding: 20px;
+        }
+
+        .shipping-row {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+
+        .product-details {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .product-price {
+            text-align: left;
+            margin-top: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            
+            <!-- Success Hero -->
+            <div class="success-hero">
+                <div class="success-icon">✓</div>
+                <h1>Order Confirmed!</h1>
+                <p>Thank you for your order. Your order has been placed successfully.</p>
+            </div>
+            
+            <!-- Order Info Cards -->
+            <div class="order-info">
+                <div class="info-item">
+                    <strong>Order Number</strong>
+                    <p>{{ order.order_number }}</p>
+                </div>
+                <div class="info-item">
+                    <strong>Order Date</strong>
+                    <p>{{ order.created_at|date:"M d, Y" }}</p>
+                </div>
+                <div class="info-item">
+                    <strong>Total Amount</strong>
+                    <p>${{ order.total_amount|floatformat:2 }}</p>
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="products-section">
+                <h3>Order Items</h3>
+                {% for item in order_items %}
+                <div class="product-item">
+                    <div class="product-image">
+                        {% if item.product_data and item.product_data.image %}
+                            <img src="{{ item.product_data.image }}" 
+                                alt="{{ item.product_name }}" 
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="placeholder" style="display: none;">📷</div>
+                        {% elif item.product and item.product.image %}
+                            <img src="{{ item.product.image.url }}" 
+                                alt="{{ item.product_name }}" 
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="placeholder" style="display: none;">📷</div>
+                        {% else %}
+                            <div class="placeholder">📷</div>
+                        {% endif %}
+                    </div>
+                    <div class="product-details">
+                        <div class="product-info">
+                            <h6>{{ item.product_name }}</h6>
+                            <p class="sku">SKU: {{ item.product_sku }}</p>
+                        </div>
+                        <div class="product-price">
+                            <span class="qty">Qty: {{ item.quantity }}</span>
+                            <span class="price">${{ item.unit_price|floatformat:2 }} × {{ item.quantity }} = ${{ item.total_price|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: #6b7280; text-align: center; padding: 20px;">No items in this order.</p>
+                {% endfor %}
+            </div>
+            
+            <!-- Order Total -->
+            <div class="order-total">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>${{ order.subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="total-row">
+                    <span>Shipping:</span>
+                    <span>${{ order.shipping_cost|floatformat:2 }}</span>
+                </div>
+                <div class="total-row">
+                    <span>Tax:</span>
+                    <span>${{ order.tax_amount|floatformat:2 }}</span>
+                </div>
+                {% if order.discount_amount > 0 %}
+                <div class="total-row">
+                    <span>Discount:</span>
+                    <span>-${{ order.discount_amount|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+                <div class="total-row grand-total">
+                    <span>Total</span>
+                    <span>${{ order.total_amount|floatformat:2 }}</span>
+                </div>
+            </div>
+            
+            <!-- Next Steps Timeline -->
+            <div class="next-steps">
+                <h3>What's Next?</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="timeline-dot">📧</span>
+                        <h6>Confirmation Email</h6>
+                        <p>A confirmation has been sent to <strong>{{ order.user.email }}</strong></p>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-dot">⚙️</span>
+                        <h6>Processing</h6>
+                        <p>Your order will be processed within 24 hours</p>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-dot">🚚</span>
+                        <h6>Shipping</h6>
+                        <p>We'll send you a tracking number once it ships (3-7 business days)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="{% url 'orders:order_detail' order.order_number %}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                <a href="{% url 'orders:download_invoice' order.order_number %}" class="btn btn-secondary">
+                    <i class="fas fa-download"></i> Download Invoice
+                </a>
+                <a href="{% url 'products:product_list' %}" class="btn btn-success">
+                    <i class="fas fa-shopping-bag"></i> Continue Shopping
+                </a>
+            </div>
+            
+            <!-- Shipping Information -->
+            <div class="shipping-card">
+                <h5>Delivery Information</h5>
+                <div class="shipping-row">
+                    <div>
+                        <p>📍 Shipping Address</p>
+                        <div class="value">{{ order.shipping_address }}<br>{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_zip_code }}<br>{{ order.shipping_country }}</div>
+                    </div>
+                    <div>
+                        <p>💳 Payment Method</p>
+                        <div class="value">{{ order.payment_method|title }}<br><span class="badge-status">{{ order.get_payment_status_display }}</span></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

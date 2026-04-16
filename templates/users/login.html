@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - TechStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Login to TechStore</h2>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                        
+                        {{ form.non_field_errors }}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">{{ form.username.label }}</label>
+                            {{ form.username }}
+                            {{ form.username.errors }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">{{ form.password.label }}</label>
+                            {{ form.password }}
+                            {{ form.password.errors }}
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember">
+                            <label class="form-check-label" for="remember">Remember me</label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary-custom w-100 btn-lg mb-3">
+                            Login
+                        </button>
+                        
+                        <div class="text-center mb-3">
+                            <a href="{% url 'users:password_reset' %}" class="text-decoration-none">
+                                Forgot your password?
+                            </a>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">Don't have an account?</p>
+                            <a href="{% url 'users:register' %}" class="btn btn-outline-primary-custom mt-2">
+                                Create Account
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body text-center">
+                    <p class="mb-2">Or login with</p>
+                    <button class="btn btn-outline-dark me-2">
+                        <i class="fab fa-google"></i> Google
+                    </button>
+                    <button class="btn btn-outline-dark">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

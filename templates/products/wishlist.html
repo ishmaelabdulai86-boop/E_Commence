@@ -1,0 +1,960 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wishlist - TechStore{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section with Gradient Background -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <h1 class="dashboard-title">My <span class="text-gradient">Wishlist</span></h1>
+                    <p class="subtitle mb-0">Save your favorite products</p>
+                </div>
+                <div class="role-badge">{{ wishlist_items|length }} Items</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="sidebar-wrapper">
+                    <!-- User Profile Card -->
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                {% if user.profile_picture_url %}
+                                    <img src="{{ user.profile_picture_url }}" 
+                                        alt="Profile" class="avatar-image">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <h5 class="profile-name">{{ user.get_full_name|default:user.username }}</h5>
+                            <p class="profile-email">{{ user.email }}</p>
+                            <div class="profile-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Member since {{ user.date_joined|date:"Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="sidebar-menu">
+                        <a href="{% url 'users:profile' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <span>Dashboard</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'orders:order_list' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <span>My Orders</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'products:wishlist' %}" class="menu-item active">
+                            <div class="menu-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <span>Wishlist</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:profile_edit' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <span>Edit Profile</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:password_change' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <span>Change Password</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'notifications:notification_list' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <span>Notifications</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <hr>
+                        <a href="{% url 'users:logout' %}" class="menu-item menu-item-logout">
+                            <div class="menu-icon">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </div>
+                            <span>Logout</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                    <h1 class="h3 mb-0">My Wishlist</h1>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-primary-custom">{{ wishlist_items|length }} items</span>
+                        {% if wishlist_items %}
+                        <button class="btn btn-sm btn-outline-primary" onclick="moveAllToCart()">
+                            <i class="fas fa-cart-plus me-1"></i>Move All to Cart
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="clearWishlist()">
+                            <i class="fas fa-trash me-1"></i>Clear All
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Products Grid -->
+                {% if wishlist_items %}
+                <div class="row g-4">
+                    {% for item in wishlist_items %}
+                    <div class="col-md-6 col-lg-4" id="wishlist-item-{{ item.product.id }}">
+                        <div class="wishlist-product-card">
+                            <div class="product-image-wrapper">
+                                {% with product_image=item.product.images.first %}
+                                <img src="{% if product_image %}{{ product_image.image.url }}{% else %}https://via.placeholder.com/400x300?text=Product{% endif %}" 
+                                     alt="{{ item.product.name }}">
+                                {% endwith %}
+                                
+                                {% if item.product.discount_price %}
+                                <div class="product-badge">
+                                    -{{ item.product.discount_percentage }}% OFF
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="product-info">
+                                <h5 class="product-name">{{ item.product.name|truncatechars:50 }}</h5>
+                                
+                                <div class="product-rating">
+                                    {% with rating=item.product.average_rating|default:0 %}
+                                    {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= rating %}
+                                    <i class="fas fa-star"></i>
+                                    {% elif forloop.counter <= rating|add:"0.5" %}
+                                    <i class="fas fa-star-half-alt"></i>
+                                    {% else %}
+                                    <i class="far fa-star"></i>
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% endwith %}
+                                    <span class="rating-text">({{ item.product.review_count }})</span>
+                                </div>
+                                
+                                <div class="product-price">
+                                    {% if item.product.discount_price %}
+                                    <span class="price-current">${{ item.product.discount_price }}</span>
+                                    <span class="price-original">${{ item.product.price }}</span>
+                                    {% else %}
+                                    <span class="price-current">${{ item.product.price }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="stock-status">
+                                    {% if item.product.stock > 0 %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> In Stock</span>
+                                    {% else %}
+                                    <span class="text-danger"><i class="fas fa-times-circle"></i> Out of Stock</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="product-actions">
+                                <button class="action-btn btn-add-cart cart-btn" data-product-id="{{ item.product.id }}" data-product-slug="{{ item.product.slug }}" {% if item.product.stock == 0 %}disabled{% endif %}>
+                                    <i class="fas fa-shopping-cart me-1"></i> Add to Cart
+                                </button>
+                                <button class="action-btn remove-btn" data-product-id="{{ item.product.id }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            
+                            <a href="{% url 'products:product_detail' item.product.slug %}" class="stretched-link"></a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <!-- Empty Wishlist State -->
+                <div class="empty-state">
+                    <i class="fas fa-heart-broken"></i>
+                    <h5>Your wishlist is empty</h5>
+                    <p>Start adding your favorite products to your wishlist!</p>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-primary">
+                        <i class="fas fa-shopping-bag me-2"></i>Explore Products
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Wishlist Styles */
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --light: #f9fafb;
+        --border: #e5e7eb;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-container {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .text-gradient {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        position: sticky;
+        top: 20px;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+
+    .profile-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        height: 80px;
+        position: relative;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        padding: 3px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .profile-info {
+        text-align: center;
+        padding: 60px 1rem 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-email {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .meta-item {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item i {
+        margin-right: 0.5rem;
+    }
+
+    /* Sidebar Menu */
+    .sidebar-menu {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: var(--text);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        font-weight: 500;
+    }
+
+    .menu-item:hover {
+        background: var(--light);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item-logout {
+        color: var(--danger);
+    }
+
+    .menu-item-logout:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .menu-icon {
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Wishlist Product Card */
+    .wishlist-product-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .wishlist-product-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+    }
+
+    .product-image-wrapper {
+        position: relative;
+        overflow: hidden;
+        background: #f5f5f5;
+        height: 220px;
+    }
+
+    .product-image-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .wishlist-product-card:hover .product-image-wrapper img {
+        transform: scale(1.08);
+    }
+
+    .product-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        z-index: 2;
+    }
+
+    .product-info {
+        padding: 1.25rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+        min-height: 2.8em;
+    }
+
+    .product-rating {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .product-rating i {
+        color: #fbbf24;
+        font-size: 0.8rem;
+    }
+
+    .rating-text {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .product-price {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .price-current {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .price-original {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-decoration: line-through;
+    }
+
+    .stock-status {
+        font-size: 0.75rem;
+        margin-top: auto;
+    }
+
+    .product-actions {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0 1.25rem 1.25rem 1.25rem;
+    }
+
+    .action-btn {
+        flex: 1;
+        border: 1px solid var(--border);
+        background: white;
+        border-radius: 8px;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .action-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+    }
+
+    .btn-add-cart {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border: none;
+    }
+
+    .btn-add-cart:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+
+    .btn-add-cart:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .remove-btn {
+        width: 38px;
+        flex: none;
+    }
+
+    .remove-btn:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--text-muted);
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h5 {
+        color: var(--text);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Badge */
+    .badge.bg-primary-custom {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+    }
+
+    /* Buttons */
+    .btn-outline-primary {
+        color: var(--primary);
+        border: 1px solid var(--border);
+        background: white;
+    }
+
+    .btn-outline-primary:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-outline-danger {
+        color: var(--danger);
+        border: 1px solid var(--border);
+        background: white;
+    }
+
+    .btn-outline-danger:hover {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: var(--danger);
+        color: var(--danger);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Stretched link */
+    .stretched-link::after {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 1;
+        content: "";
+    }
+
+    .product-actions button,
+    .product-actions {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .sidebar-wrapper {
+            position: static;
+            margin-bottom: 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-title {
+            font-size: 1.5rem;
+        }
+        
+        .role-badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 1rem;
+        }
+        
+        .product-image-wrapper {
+            height: 180px;
+        }
+        
+        .product-name {
+            font-size: 0.9rem;
+        }
+        
+        .price-current {
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Show notification
+function showNotification(message, type = 'success') {
+    let container = document.querySelector('.messages-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'messages-container';
+        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
+        document.body.appendChild(container);
+    }
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px;';
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    container.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) alertDiv.remove();
+    }, 4000);
+}
+
+// Event delegation for dynamic buttons
+document.addEventListener('click', function(e) {
+    // Add to cart button
+    if (e.target.closest('.cart-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const btn = e.target.closest('.cart-btn');
+        const productId = btn.dataset.productId;
+        if (productId) {
+            addToCart(productId);
+        }
+    }
+    
+    // Remove from wishlist button
+    if (e.target.closest('.remove-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const btn = e.target.closest('.remove-btn');
+        const productId = btn.dataset.productId;
+        if (productId) {
+            removeFromWishlist(productId);
+        }
+    }
+});
+
+// Add to cart
+function addToCart(productId) {
+    const addToCartUrl = "{% url 'cart:add_to_cart' 0 %}".replace('0', productId);
+    
+    fetch(addToCartUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ quantity: 1 })
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.message || 'Request failed');
+        return data;
+    })
+    .then(data => {
+        if (data && data.success) {
+            showNotification('Item added to cart successfully!', 'success');
+            // Update cart count if available
+            if (data.cart_quantity) {
+                const cartCountEl = document.getElementById('cart-count');
+                if (cartCountEl) cartCountEl.textContent = data.cart_quantity;
+            }
+            // Remove from wishlist after adding to cart
+            setTimeout(() => {
+                removeFromWishlist(productId);
+            }, 500);
+        } else {
+            showNotification(data?.message || 'Could not add to cart', 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification(err.message || 'Error adding to cart', 'danger');
+    });
+}
+
+// Remove from wishlist
+function removeFromWishlist(productId) {
+    const removeUrl = "{% url 'products:remove_from_wishlist' 0 %}".replace('0', productId);
+    
+    fetch(removeUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.message || 'Request failed');
+        return data;
+    })
+    .then(data => {
+        if (data && data.success) {
+            showNotification('Item removed from wishlist', 'info');
+            // Remove the card from DOM
+            const itemElement = document.getElementById(`wishlist-item-${productId}`);
+            if (itemElement) {
+                itemElement.remove();
+            }
+            // Update counts
+            updateWishlistCount();
+        } else {
+            showNotification(data?.message || 'Could not remove item', 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification(err.message || 'Error removing item', 'danger');
+    });
+}
+
+// Move all to cart
+function moveAllToCart() {
+    if (!confirm('Move all items to your cart?')) return;
+    
+    const moveAllUrl = "{% url 'products:move_all_to_cart' %}";
+    
+    fetch(moveAllUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.message || 'Request failed');
+        return data;
+    })
+    .then(data => {
+        if (data && data.success) {
+            showNotification('All items moved to cart!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification(data?.message || 'Could not move items to cart', 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification(err.message || 'Error moving items', 'danger');
+    });
+}
+
+// Clear wishlist
+function clearWishlist() {
+    if (!confirm('Are you sure you want to clear your entire wishlist? This action cannot be undone.')) return;
+    
+    const clearUrl = "{% url 'products:clear_wishlist' %}";
+    
+    fetch(clearUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(async response => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.message || 'Request failed');
+        return data;
+    })
+    .then(data => {
+        if (data && data.success) {
+            showNotification('Wishlist cleared!', 'info');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification(data?.message || 'Could not clear wishlist', 'danger');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification(err.message || 'Error clearing wishlist', 'danger');
+    });
+}
+
+// Update wishlist count
+function updateWishlistCount() {
+    const remainingItems = document.querySelectorAll('[id^="wishlist-item-"]').length;
+    const badge = document.querySelector('.role-badge');
+    const headerBadge = document.querySelector('.badge.bg-primary-custom');
+    
+    if (badge) {
+        badge.textContent = `${remainingItems} Items`;
+    }
+    if (headerBadge) {
+        headerBadge.textContent = `${remainingItems} items`;
+    }
+    
+    // Show empty state if no items left
+    if (remainingItems === 0) {
+        const container = document.querySelector('.col-lg-9');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-heart-broken"></i>
+                    <h5>Your wishlist is empty</h5>
+                    <p>Start adding your favorite products to your wishlist!</p>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-primary">
+                        <i class="fas fa-shopping-bag me-2"></i>Explore Products
+                    </a>
+                </div>
+            `;
+        }
+    }
+}
+</script>
+{% endblock %}

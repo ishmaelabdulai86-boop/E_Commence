@@ -1,0 +1,852 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - TechStore{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section with Gradient Background -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <h1 class="dashboard-title">Edit <span class="text-gradient">Profile</span></h1>
+                    <p class="subtitle mb-0">Update your personal and address information</p>
+                </div>
+                <div class="role-badge">Profile Settings</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="sidebar-wrapper">
+                    <!-- User Profile Card -->
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                {% if user.profile_picture_url %}
+                                    <img src="{{ user.profile_picture_url }}" 
+                                        alt="Profile" class="avatar-image">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <h5 class="profile-name">{{ user.get_full_name|default:user.username }}</h5>
+                            <p class="profile-email">{{ user.email }}</p>
+                            <div class="profile-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Member since {{ user.date_joined|date:"Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="sidebar-menu">
+                        <a href="{% url 'users:profile' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <span>Dashboard</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'orders:order_list' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <span>My Orders</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'products:wishlist' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <span>Wishlist</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:profile_edit' %}" class="menu-item active">
+                            <div class="menu-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <span>Edit Profile</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:password_change' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <span>Change Password</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'notifications:notification_list' %}" class="menu-item">
+                            <div class="menu-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <span>Notifications</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <hr class="my-2">
+                        <a href="{% url 'users:logout' %}" class="menu-item menu-item-logout">
+                            <div class="menu-icon">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </div>
+                            <span>Logout</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <div class="edit-profile-container">
+        <form method="post" enctype="multipart/form-data" class="edit-form">
+            {% csrf_token %}
+
+            <!-- Profile Picture Card -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="fas fa-image me-2"></i>Profile Picture</h5>
+                </div>
+                <div class="form-card-body">
+                    <div class="profile-picture-section">
+                        <div class="current-picture">
+                            {% if user.profile_picture_url %}
+                                <img src="{{ user.profile_picture_url }}" 
+                                     alt="Current Profile" 
+                                     class="profile-thumbnail">
+                            {% else %}
+                                <div class="profile-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="picture-controls">
+                            <div class="form-group">
+                                <label for="profile_picture" class="form-label-modern">
+                                    <i class="fas fa-upload me-2"></i>Choose New Picture
+                                </label>
+                                <input type="file" 
+                                       class="form-control-modern" 
+                                       id="profile_picture" 
+                                       name="profile_picture"
+                                       accept="image/*">
+                                <div class="form-hint">Recommended: Square image, max 2MB (JPG, PNG)</div>
+                            </div>
+
+                            {% if user.profile_picture_url %}
+                            <div class="form-check-modern">
+                                <input class="form-check-input-modern" type="checkbox" 
+                                       id="remove_picture" name="remove_picture">
+                                <label class="form-check-label-modern" for="remove_picture">
+                                    Remove current profile picture
+                                </label>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Information Card -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                </div>
+                <div class="form-card-body">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="first_name" class="form-label-modern">First Name</label>
+                            <input type="text" 
+                                   class="form-control-modern {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                   id="first_name" 
+                                   name="first_name" 
+                                   value="{{ form.first_name.value|default:user.first_name|default:'' }}">
+                            {% if form.first_name.errors %}
+                            <div class="form-error">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="last_name" class="form-label-modern">Last Name</label>
+                            <input type="text" 
+                                   class="form-control-modern {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                   id="last_name" 
+                                   name="last_name" 
+                                   value="{{ form.last_name.value|default:user.last_name|default:'' }}">
+                            {% if form.last_name.errors %}
+                            <div class="form-error">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username" class="form-label-modern">Username</label>
+                        <input type="text" 
+                               class="form-control-modern {% if form.username.errors %}is-invalid{% endif %}" 
+                               id="username" 
+                               name="username" 
+                               value="{{ form.username.value|default:user.username|default:'' }}">
+                        {% if form.username.errors %}
+                        <div class="form-error">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label-modern">Email Address</label>
+                        <input type="email" 
+                               class="form-control-modern {% if form.email.errors %}is-invalid{% endif %}" 
+                               id="email" 
+                               name="email" 
+                               value="{{ form.email.value|default:user.email|default:'' }}">
+                        {% if form.email.errors %}
+                        <div class="form-error">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone" class="form-label-modern">Phone Number</label>
+                        <input type="tel" 
+                               class="form-control-modern {% if form.phone.errors %}is-invalid{% endif %}" 
+                               id="phone" 
+                               name="phone" 
+                               value="{{ form.phone.value|default:user.phone|default:'' }}">
+                        {% if form.phone.errors %}
+                        <div class="form-error">{{ form.phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address Information Card -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5 class="form-card-title"><i class="fas fa-map-marker-alt me-2"></i>Address Information</h5>
+                </div>
+                <div class="form-card-body">
+                    <div class="form-group">
+                        <label for="address" class="form-label-modern">Street Address</label>
+                        <textarea class="form-control-modern {% if form.address.errors %}is-invalid{% endif %}" 
+                                  id="address" 
+                                  name="address" 
+                                  rows="3">{{ form.address.value|default:user.address|default:'' }}</textarea>
+                        {% if form.address.errors %}
+                        <div class="form-error">{{ form.address.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="city" class="form-label-modern">City</label>
+                            <input type="text" 
+                                   class="form-control-modern {% if form.city.errors %}is-invalid{% endif %}" 
+                                   id="city" 
+                                   name="city" 
+                                   value="{{ form.city.value|default:user.city|default:'' }}">
+                            {% if form.city.errors %}
+                            <div class="form-error">{{ form.city.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="state" class="form-label-modern">State/Province</label>
+                            <input type="text" 
+                                   class="form-control-modern {% if form.state.errors %}is-invalid{% endif %}" 
+                                   id="state" 
+                                   name="state" 
+                                   value="{{ form.state.value|default:user.state|default:'' }}">
+                            {% if form.state.errors %}
+                            <div class="form-error">{{ form.state.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="country" class="form-label-modern">Country</label>
+                            <input type="text" 
+                                   class="form-control-modern {% if form.country.errors %}is-invalid{% endif %}" 
+                                   id="country" 
+                                   name="country" 
+                                   value="{{ form.country.value|default:user.country|default:'' }}">
+                            {% if form.country.errors %}
+                            <div class="form-error">{{ form.country.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label for="zip_code" class="form-label-modern">ZIP/Postal Code</label>
+                            <input type="text" 
+                                   class="form-control-modern {% if form.zip_code.errors %}is-invalid{% endif %}" 
+                                   id="zip_code" 
+                                   name="zip_code" 
+                                   value="{{ form.zip_code.value|default:user.zip_code|default:'' }}">
+                            {% if form.zip_code.errors %}
+                            <div class="form-error">{{ form.zip_code.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <a href="{% url 'users:profile' %}" class="btn-modern btn-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn-modern btn-primary">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+        </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --light: #f9fafb;
+        --border: #e5e7eb;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-container {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .text-gradient {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        position: sticky;
+        top: 20px;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+
+    .profile-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        height: 80px;
+        position: relative;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        padding: 3px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .profile-info {
+        text-align: center;
+        padding: 60px 1rem 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-email {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .meta-item {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item i {
+        margin-right: 0.5rem;
+    }
+
+    /* Sidebar Menu */
+    .sidebar-menu {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: var(--text);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        font-weight: 500;
+    }
+
+    .menu-item:hover {
+        background: var(--light);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item-logout {
+        color: var(--danger);
+    }
+
+    .menu-item-logout:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .menu-icon {
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .menu-item hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Edit Profile Container */
+    .edit-profile-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .edit-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Form Card */
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .form-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .form-card-header {
+        background: linear-gradient(135deg, #f9fafb 0%, white 100%);
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-card-title {
+        color: var(--text);
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .form-card-body {
+        padding: 2rem;
+    }
+
+    /* Profile Picture Section */
+    .profile-picture-section {
+        display: flex;
+        align-items: flex-start;
+        gap: 2rem;
+    }
+
+    .current-picture {
+        flex-shrink: 0;
+    }
+
+    .profile-thumbnail {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        box-shadow: var(--shadow);
+    }
+
+    .profile-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: var(--primary);
+        border: 2px dashed var(--border);
+    }
+
+    .picture-controls {
+        flex: 1;
+    }
+
+    /* Form Groups and Grids */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    /* Labels */
+    .form-label-modern {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Input Fields */
+    .form-control-modern,
+    .form-control-modern:focus {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        background: white;
+        color: var(--text);
+    }
+
+    .form-control-modern {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-control-modern:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-control-modern.is-invalid {
+        border-color: var(--danger);
+        background-color: rgba(239, 68, 68, 0.05);
+    }
+
+    .form-control-modern.is-invalid:focus {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    /* Textarea */
+    .form-control-modern[type="textarea"],
+    textarea.form-control-modern {
+        resize: vertical;
+        min-height: 100px;
+        font-family: inherit;
+    }
+
+    /* Form Hint */
+    .form-hint {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+    }
+
+    /* Checkbox Modern */
+    .form-check-modern {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding: 0.875rem;
+        background: rgba(239, 68, 68, 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .form-check-input-modern {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--danger);
+    }
+
+    .form-check-label-modern {
+        margin: 0;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--danger);
+    }
+
+    /* Error Messages */
+    .form-error {
+        font-size: 0.8rem;
+        color: var(--danger);
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-error::before {
+        content: '⚠';
+        font-weight: bold;
+    }
+
+    /* Form Actions */
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Buttons */
+    .btn-modern {
+        padding: 0.875rem 1.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-modern.btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+    }
+
+    .btn-modern.btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-modern.btn-secondary {
+        background: var(--light);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .btn-modern.btn-secondary:hover {
+        background: white;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .sidebar-wrapper {
+            position: static;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-title {
+            font-size: 1.5rem;
+        }
+
+        .form-card-body {
+            padding: 1.5rem;
+        }
+
+        .profile-picture-section {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1.5rem;
+        }
+
+        .picture-controls {
+            width: 100%;
+        }
+
+        .form-grid-2 {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+        }
+
+        .form-actions .btn-modern {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .dashboard-title {
+            font-size: 1.25rem;
+        }
+
+        .edit-profile-container {
+            padding: 0;
+        }
+
+        .form-card {
+            border-radius: 8px;
+        }
+
+        .form-card-body {
+            padding: 1rem;
+        }
+
+        .form-card-header {
+            padding: 1rem;
+        }
+
+        .form-card-title {
+            font-size: 0.95rem;
+        }
+
+        .profile-thumbnail {
+            width: 100px;
+            height: 100px;
+        }
+
+        .profile-placeholder {
+            width: 100px;
+            height: 100px;
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

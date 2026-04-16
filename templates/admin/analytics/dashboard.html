@@ -1,0 +1,732 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard - TechStore{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-chart-line me-2"></i>Analytics Dashboard
+            </h1>
+            <p class="text-muted mb-0">Business performance insights and metrics</p>
+        </div>
+        
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-calendar me-2"></i>Last 30 Days
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?period=7d">Last 7 Days</a></li>
+                <li><a class="dropdown-item" href="?period=30d">Last 30 Days</a></li>
+                <li><a class="dropdown-item" href="?period=90d">Last 90 Days</a></li>
+                <li><a class="dropdown-item" href="?period=1y">Last Year</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Key Metrics - Updated with gradient styling -->
+    <div class="row mb-4">
+        <!-- Revenue Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-dollar-sign icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Today's Revenue</h6>
+                            <h3 class="mb-0 fw-bold">${{ today_sales.revenue|default:"0.00"|floatformat:2 }}</h3>
+                            <div class="mt-2">
+                                <small class="text-muted">{{ today_sales.orders|default:"0" }} orders</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Orders Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-shopping-bag icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Monthly Orders</h6>
+                            <h3 class="mb-0 fw-bold">{{ month_sales.orders|default:"0" }}</h3>
+                            <div class="mt-2">
+                                <small class="text-muted">${{ month_sales.revenue|default:"0.00"|floatformat:2 }} revenue</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Customers Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-users icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Customers</h6>
+                            <h3 class="mb-0 fw-bold">{{ total_customers }}</h3>
+                            <div class="mt-2">
+                                <small class="text-success">{{ new_customers_today }} new today</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AOV Card -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-chart-line icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Avg Order Value</h6>
+                            <h3 class="mb-0 fw-bold">${{ today_sales.avg_order|default:"0.00"|floatformat:2 }}</h3>
+                            <div class="mt-2">
+                                <small class="text-muted">Monthly average</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="row mb-4">
+        <!-- Revenue Chart -->
+        <div class="col-xl-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Revenue Trend (Last 30 Days)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order Status Chart -->
+        <div class="col-xl-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Order Status Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="orderStatusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Products -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-star me-2"></i>Top Selling Products (Last 30 Days)
+                    </h6>
+                    <a href="{% url 'product_analytics' %}" class="btn btn-sm btn-outline-primary">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th class="text-end">Units Sold</th>
+                                    <th class="text-end">Revenue</th>
+                                    <th class="text-end">Avg Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_products %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ product.product__image|default:'https://via.placeholder.com/40' }}" 
+                                                 alt="{{ product.product__name }}" width="40" height="40" class="rounded me-3 object-fit-cover">
+                                            <div>
+                                                <h6 class="mb-0">{{ product.product__name|truncatechars:30 }}</h6>
+                                                <small class="text-muted">{{ product.product__sku }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ product.product__category__name|default:"Uncategorized" }}</span>
+                                    </td>
+                                    <td class="text-end">{{ product.total_sold }}</td>
+                                    <td class="text-end">
+                                        <strong>${{ product.revenue|floatformat:2 }}</strong>
+                                    </td>
+                                    <td class="text-end">${{ product.avg_price|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="fas fa-chart-bar fa-2x mb-3"></i>
+                                        <p>No sales data available</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Sales & Quick Stats -->
+    <div class="row">
+        <!-- Category Sales -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tags me-2"></i>Sales by Category
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt me-2"></i>Quick Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card stat-card border-0">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle bg-purple-gradient text-white me-3">
+                                            <i class="fas fa-user-check icon-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Active Customers</h6>
+                                            <h3 class="mb-0 fw-bold">{{ active_customers }}</h3>
+                                            <small class="text-muted">Last 30 days</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card stat-card border-0">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle bg-teal-gradient text-white me-3">
+                                            <i class="fas fa-calendar-week icon-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Weekly Orders</h6>
+                                            <h3 class="mb-0 fw-bold">{{ week_sales.orders|default:"0" }}</h3>
+                                            <small class="text-muted">Last 7 days</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card stat-card border-0">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle bg-orange-gradient text-white me-3">
+                                            <i class="fas fa-calendar-alt icon-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Yearly Orders</h6>
+                                            <h3 class="mb-0 fw-bold">{{ year_sales.orders|default:"0" }}</h3>
+                                            <small class="text-muted">Last 365 days</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card stat-card border-0">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle bg-pink-gradient text-white me-3">
+                                            <i class="fas fa-dollar-sign icon-sm"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Yearly Revenue</h6>
+                                            <h3 class="mb-0 fw-bold">${{ year_sales.revenue|default:"0"|floatformat:0 }}</h3>
+                                            <small class="text-muted">Last 365 days</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Stat Cards - Gradient Style */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Icon size classes */
+    .icon-lg {
+        font-size: 1.5rem !important;
+        line-height: 1.5rem !important;
+    }
+    
+    .icon-sm {
+        font-size: 1rem !important;
+        line-height: 1rem !important;
+    }
+
+    /* For smaller stat cards in quick stats */
+    .stat-card .card-body.p-3 {
+        padding: 1rem !important;
+        min-height: auto;
+    }
+
+    .stat-card .card-body.p-3 .icon-circle {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    .stat-card .card-body.p-3 .text-muted {
+        font-size: 0.75rem;
+    }
+
+    .stat-card .card-body.p-3 .fw-bold {
+        font-size: 1.25rem;
+    }
+
+    /* Gradient backgrounds - Main Stats */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+
+    /* NEW: Gradient backgrounds - Quick Stats */
+    .bg-purple-gradient {
+        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+    }
+    
+    .bg-teal-gradient {
+        background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%) !important;
+    }
+    
+    .bg-orange-gradient {
+        background: linear-gradient(135deg, #f97316 0%, #fb923c 100%) !important;
+    }
+    
+    .bg-pink-gradient {
+        background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
+    }
+
+    /* Card specific top borders for main stats */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+
+    /* Card specific top borders for quick stats - DIFFERENT COLORS */
+    .col-md-6:nth-child(1) .stat-card::before { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+    .col-md-6:nth-child(2) .stat-card::before { background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%); }
+    .col-md-6:nth-child(3) .stat-card::before { background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); }
+    .col-md-6:nth-child(4) .stat-card::before { background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); }
+
+    /* Text styling for cards only */
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Ensure Font Awesome icons display properly */
+    .fas {
+        display: inline-block;
+        font-style: normal;
+        font-variant: normal;
+        text-rendering: auto;
+        line-height: 1;
+    }
+
+    /* Image styling for product table */
+    .object-fit-cover {
+        object-fit: cover;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+        }
+        .icon-lg {
+            font-size: 1.25rem !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+        .stat-card .card-body.p-3 .icon-circle {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            min-height: 36px;
+        }
+        .stat-card .card-body.p-3 .icon-sm {
+            font-size: 0.875rem !important;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-xl-3, .col-md-6 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 100px;
+        }
+        .stat-card .card-body.p-3 {
+            padding: 0.75rem !important;
+        }
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        .icon-lg {
+            font-size: 1.125rem !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-xl-3, .col-md-6 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            min-height: 40px;
+        }
+        .icon-lg {
+            font-size: 1rem !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+        .stat-card .card-body.p-3 .icon-circle {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            min-height: 32px;
+        }
+        .stat-card .card-body.p-3 .icon-sm {
+            font-size: 0.75rem !important;
+        }
+    }
+
+    /* Table styling */
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+    }
+    
+    .card-header {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueData = {{ revenue_data|safe }};
+    
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: revenueData.map(item => item.date),
+            datasets: [{
+                label: 'Revenue ($)',
+                data: revenueData.map(item => item.revenue),
+                borderColor: 'rgb(108, 99, 255)',
+                backgroundColor: 'rgba(108, 99, 255, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `$${context.parsed.y.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Order Status Chart
+    const orderStatusCtx = document.getElementById('orderStatusChart').getContext('2d');
+    const orderStatusData = [
+        {% for status in order_status_counts %}
+        { status: '{{ status.status|title }}', count: {{ status.count }} },
+        {% endfor %}
+    ];
+    
+    const orderStatusChart = new Chart(orderStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: orderStatusData.map(item => item.status),
+            datasets: [{
+                data: orderStatusData.map(item => item.count),
+                backgroundColor: [
+                    '#6366f1', '#ef4444', '#3b82f6', '#10b981', 
+                    '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((context.parsed / total) * 100);
+                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Category Sales Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryData = [
+        {% for category in category_sales %}
+        { category: '{{ category.product__category__name|default:"Uncategorized" }}', revenue: {{ category.revenue|floatformat:2 }} },
+        {% endfor %}
+    ];
+    
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: categoryData.map(item => item.category),
+            datasets: [{
+                label: 'Revenue ($)',
+                data: categoryData.map(item => item.revenue),
+                backgroundColor: 'rgba(54, 209, 220, 0.7)',
+                borderColor: 'rgb(54, 209, 220)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `$${context.parsed.y.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
+    
+    // Auto-refresh data every 5 minutes
+    setInterval(() => {
+        fetch('/analytics/api/sales-data/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update revenue chart
+                    revenueChart.data.labels = data.data.map(item => item.date);
+                    revenueChart.data.datasets[0].data = data.data.map(item => item.revenue);
+                    revenueChart.update();
+                }
+            });
+    }, 300000); // 5 minutes
+</script>
+{% endblock %}
+{% endblock %}

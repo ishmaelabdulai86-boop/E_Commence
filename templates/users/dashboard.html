@@ -1,0 +1,1217 @@
+{% extends 'base.html' %}
+
+{% block title %}My Dashboard - TechStore{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section with Gradient Background -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <h1 class="dashboard-title">Welcome back, <span class="text-gradient">{{ user.first_name|default:user.username }}</span></h1>
+                    <p class="subtitle mb-0">Manage your account and track your orders</p>
+                </div>
+                <div class="role-badge">{{ user.get_role_display|default:"Customer" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="sidebar-wrapper">
+                    <!-- User Profile Card -->
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                {% if user.profile_picture_url %}
+                                    <img src="{{ user.profile_picture_url }}" 
+                                        alt="Profile" class="avatar-image">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <h5 class="profile-name">{{ user.get_full_name|default:user.username }}</h5>
+                            <p class="profile-email">{{ user.email }}</p>
+                            <div class="profile-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Member since {{ user.date_joined|date:"Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="sidebar-menu">
+                        <a href="{% url 'users:profile' %}" class="menu-item active">
+                            <div class="menu-icon"><i class="fas fa-home"></i></div>
+                            <span>Dashboard</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'orders:order_list' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <span>My Orders</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'products:wishlist' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-heart"></i></div>
+                            <span>Wishlist</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                       
+                        <a href="{% url 'users:profile_edit' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-user-circle"></i></div>
+                            <span>Edit Profile</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:password_change' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-key"></i></div>
+                            <span>Change Password</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'notifications:notification_list' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-bell"></i></div>
+                            <span>Notifications</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <hr>
+                        <a href="{% url 'users:logout' %}" class="menu-item menu-item-logout">
+                            <div class="menu-icon"><i class="fas fa-sign-out-alt"></i></div>
+                            <span>Logout</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Stats Grid -->
+                <div class="row g-3 mb-5">
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-primary">
+                            <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Total Orders</p>
+                                <h3 class="stat-value">{{ order_count|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-success">
+                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Completed</p>
+                                <h3 class="stat-value">{{ completed_orders|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-warning">
+                            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Pending</p>
+                                <h3 class="stat-value">{{ pending_orders|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-danger">
+                            <div class="stat-icon"><i class="fas fa-heart"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Wishlist</p>
+                                <h3 class="stat-value">{{ wishlist_count|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders Section with Expandable Details -->
+                <div class="modern-card mb-5">
+                    <div class="card-header-modern">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history me-2"></i>Recent Orders
+                            </h5>
+                            <a href="{% url 'orders:order_list' %}" class="btn-link-modern">View All</a>
+                        </div>
+                    </div>
+                    <div class="card-body-modern">
+                        {% if recent_orders %}
+                        <div class="orders-list">
+                            {% for order in recent_orders %}
+                            <div class="order-item-wrapper" data-order-id="{{ order.id }}" data-order-number="{{ order.order_number }}">
+                                <!-- Order Summary Row (Clickable) -->
+                                <div class="order-item" onclick="toggleOrderDetails('{{ order.id }}', '{{ order.order_number }}')">
+                                    <div class="order-number">{{ order.order_number|truncatechars:12 }}</div>
+                                    <div class="order-info">
+                                        <p class="order-date">{{ order.created_at|date:"M d, Y" }}</p>
+                                        <p class="order-details">{{ order.items.count }} item{{ order.items.count|pluralize }}</p>
+                                    </div>
+                                    <div class="order-status">
+                                        <span class="order-badge order-badge-{{ order.status }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div class="order-total">${{ order.total_amount|floatformat:2 }}</div>
+                                    <div class="order-expand-icon">
+                                        <i class="fas fa-chevron-down" id="expand-icon-{{ order.id }}"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Order Details Expandable Section -->
+                                <div class="order-details-panel" id="order-details-{{ order.id }}" style="display: none;">
+                                    <div class="order-details-content">
+                                        <div class="details-content" id="content-{{ order.id }}">
+                                            <!-- Content will be populated via AJAX - NO SPINNER -->
+                                            <div class="loading-placeholder" style="text-align: center; padding: 2rem; color: #6b7280;">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-2" style="color: #6366f1;"></i>
+                                                <p>Loading order details...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h6>No orders yet</h6>
+                            <p>When you place an order, it will appear here.</p>
+                            <a href="{% url 'products:product_list' %}" class="btn-modern">Start Shopping</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Account Details Grid -->
+                <div class="row g-3">
+                    <!-- Account Information -->
+                    <div class="col-lg-6">
+                        <div class="modern-card h-100">
+                            <div class="card-header-modern">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user-circle me-2"></i>Account Information
+                                </h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="info-item">
+                                    <label class="info-label">Username</label>
+                                    <p class="info-value">{{ user.username }}</p>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <label class="info-label">Email Address</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <p class="info-value mb-0">{{ user.email }}</p>
+                                        {% if user.email_verified %}
+                                        <span class="badge-mini badge-success">Verified</span>
+                                        {% else %}
+                                        <span class="badge-mini badge-warning">Not Verified</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="info-item">
+                                    <label class="info-label">Phone Number</label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <p class="info-value mb-0">{{ user.phone|default:"Not set" }}</p>
+                                        {% if user.phone_verified %}
+                                        <span class="badge-mini badge-success">Verified</span>
+                                        {% elif user.phone %}
+                                        <span class="badge-mini badge-warning">Not Verified</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2 mt-4">
+                                    <a href="{% url 'users:profile_edit' %}" class="btn-modern">
+                                        <i class="fas fa-edit me-2"></i>Edit Profile
+                                    </a>
+                                    <a href="{% url 'users:password_change' %}" class="btn-modern btn-secondary">
+                                        <i class="fas fa-lock me-2"></i>Change Password
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipping Address -->
+                    <div class="col-lg-6">
+                        <div class="modern-card h-100">
+                            <div class="card-header-modern">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Shipping Address
+                                </h5>
+                            </div>
+                            <div class="card-body-modern">
+                                {% if user.address %}
+                                <div class="address-display">
+                                    <p class="address-line">{{ user.address }}</p>
+                                    <p class="address-line">{{ user.city }}, {{ user.state }} {{ user.zip_code }}</p>
+                                    <p class="address-line">{{ user.country }}</p>
+                                    <p class="address-line">
+                                        <i class="fas fa-phone me-2"></i>{{ user.phone|default:"Not set" }}
+                                    </p>
+                                </div>
+                                {% else %}
+                                <div class="empty-state-compact">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <h6>No address on file</h6>
+                                    <p>Add a shipping address for faster checkout.</p>
+                                </div>
+                                {% endif %}
+                                
+                                <a href="{% url 'users:profile_edit' %}" class="btn-modern w-100 mt-4">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    {% if user.address %}Update Address{% else %}Add Address{% endif %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --light: #f9fafb;
+        --border: #e5e7eb;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-container {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .text-gradient {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        position: sticky;
+        top: 20px;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+
+    .profile-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        height: 80px;
+        position: relative;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        padding: 3px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .profile-info {
+        text-align: center;
+        padding: 60px 1rem 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-email {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .meta-item {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item i {
+        margin-right: 0.5rem;
+    }
+
+    /* Sidebar Menu */
+    .sidebar-menu {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: var(--text);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        font-weight: 500;
+    }
+
+    .menu-item:hover {
+        background: var(--light);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item-logout {
+        color: var(--danger);
+    }
+
+    .menu-item-logout:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .menu-icon {
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        border-top: 4px solid transparent;
+    }
+
+    .stat-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+    }
+
+    .stat-card-primary { border-top-color: var(--primary); }
+    .stat-card-success { border-top-color: var(--success); }
+    .stat-card-warning { border-top-color: var(--warning); }
+    .stat-card-danger { border-top-color: var(--danger); }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .stat-card-primary .stat-icon { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+    .stat-card-success .stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .stat-card-warning .stat-icon { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+    .stat-card-danger .stat-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+    .stat-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+    }
+
+    /* Modern Card */
+    .modern-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .modern-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-header-modern {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--light);
+    }
+
+    .card-header-modern h5 {
+        color: var(--text);
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .btn-link-modern {
+        color: var(--primary);
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .btn-link-modern:hover {
+        color: var(--primary-dark);
+    }
+
+    .card-body-modern {
+        padding: 1.5rem;
+    }
+
+    /* Orders List */
+    .orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .order-item-wrapper {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .order-item-wrapper:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+    }
+
+    .order-item {
+        display: grid;
+        grid-template-columns: 100px 1fr 100px 100px 30px;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--light);
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .order-item:hover {
+        background: white;
+    }
+
+    .order-number {
+        font-weight: 700;
+        color: var(--primary);
+        font-size: 0.85rem;
+    }
+
+    .order-info p {
+        margin: 0;
+        font-size: 0.8rem;
+    }
+
+    .order-date {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .order-details {
+        color: var(--text-muted);
+    }
+
+    .order-status {
+        text-align: center;
+    }
+
+    .order-badge {
+        display: inline-block;
+        padding: 0.3rem 0.7rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .order-badge-delivered { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .order-badge-shipped { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+    .order-badge-processing { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+    .order-badge-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+    .order-badge-cancelled { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+    .order-total {
+        font-weight: 700;
+        color: var(--text);
+        text-align: right;
+        font-size: 0.9rem;
+    }
+
+    .order-expand-icon {
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    /* Order Details Panel */
+    .order-details-panel {
+        border-top: 1px solid var(--border);
+        background: #fefefe;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .order-details-content {
+        padding: 1.5rem;
+    }
+
+    /* Order Items Table */
+    .order-items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .order-items-table th {
+        text-align: left;
+        padding: 0.75rem;
+        background: var(--light);
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--text);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .order-items-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+    }
+
+    .order-items-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .product-image-thumb {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    /* Order Summary */
+    .order-summary {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-label {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .summary-value {
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .summary-total {
+        font-size: 1.1rem;
+        color: var(--primary);
+    }
+
+    /* Shipping Info */
+    .shipping-info {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .shipping-info p {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .shipping-info p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Action Buttons inside details */
+    .details-action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .details-action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .details-action-btn.primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+    }
+
+    .details-action-btn.secondary {
+        background: var(--light);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .details-action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+
+    .details-action-btn.secondary:hover {
+        background: white;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        color: var(--text-muted);
+        opacity: 0.3;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-state h6 {
+        color: var(--text);
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .empty-state p {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state-compact {
+        text-align: center;
+        padding: 1.5rem 1rem;
+    }
+
+    .empty-state-compact i {
+        font-size: 2rem;
+        color: var(--text-muted);
+        opacity: 0.3;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-compact h6 {
+        color: var(--text);
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .empty-state-compact p {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        margin: 0;
+    }
+
+    /* Buttons */
+    .btn-modern {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+
+    .btn-modern.btn-secondary {
+        background: var(--light);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .btn-modern.btn-secondary:hover {
+        background: white;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Info Items */
+    .info-item {
+        margin-bottom: 1.25rem;
+    }
+
+    .info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        color: var(--text);
+        font-weight: 500;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Badge Mini */
+    .badge-mini {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.6rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+
+    .badge-warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+
+    /* Address Display */
+    .address-display {
+        background: var(--light);
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .address-line {
+        color: var(--text);
+        margin-bottom: 0.35rem;
+        font-size: 0.85rem;
+    }
+
+    .address-line:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Loading placeholder */
+    .loading-placeholder {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .sidebar-wrapper { position: static; }
+        .dashboard-title { font-size: 1.75rem; }
+        .order-item { grid-template-columns: 80px 1fr 80px 30px; gap: 0.75rem; }
+        .order-total { display: none; }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-title { font-size: 1.5rem; }
+        .role-badge { font-size: 0.75rem; padding: 0.375rem 0.875rem; }
+        .stat-card { flex-direction: column; text-align: center; gap: 0.75rem; }
+        .order-item { grid-template-columns: 1fr 30px; gap: 0.5rem; }
+        .order-status, .order-total { display: none; }
+    }
+</style>
+
+<script>
+    // Track open panels to close others
+    let openPanelId = null;
+    // Track which orders have been loaded
+    const loadedOrders = {};
+
+    function toggleOrderDetails(orderId, orderNumber) {
+        const panel = document.getElementById(`order-details-${orderId}`);
+        const expandIcon = document.getElementById(`expand-icon-${orderId}`);
+        
+        // If clicking the same panel, close it
+        if (openPanelId === orderId) {
+            panel.style.display = 'none';
+            openPanelId = null;
+            if (expandIcon) {
+                expandIcon.className = 'fas fa-chevron-down';
+            }
+            return;
+        }
+        
+        // Close any open panel
+        if (openPanelId) {
+            const prevPanel = document.getElementById(`order-details-${openPanelId}`);
+            const prevIcon = document.getElementById(`expand-icon-${openPanelId}`);
+            if (prevPanel) {
+                prevPanel.style.display = 'none';
+            }
+            if (prevIcon) {
+                prevIcon.className = 'fas fa-chevron-down';
+            }
+        }
+        
+        // Open the new panel
+        panel.style.display = 'block';
+        openPanelId = orderId;
+        if (expandIcon) {
+            expandIcon.className = 'fas fa-chevron-up';
+        }
+        
+        // If content hasn't been loaded yet, fetch it
+        if (!loadedOrders[orderId]) {
+            loadOrderDetails(orderId);
+        }
+    }
+    
+    function loadOrderDetails(orderId) {
+        const contentDiv = document.getElementById(`content-${orderId}`);
+        
+        // Fetch order details via AJAX
+        fetch(`/orders/api/order-details/${orderId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadedOrders[orderId] = true;
+            
+            if (data.success) {
+                contentDiv.innerHTML = renderOrderDetails(data.order);
+            } else {
+                contentDiv.innerHTML = `
+                    <div class="alert alert-danger" style="padding: 1rem; border-radius: 8px; background: #fee2e2; color: #dc2626; border: none;">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        ${data.error || 'Failed to load order details'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            contentDiv.innerHTML = `
+                <div class="alert alert-danger" style="padding: 1rem; border-radius: 8px; background: #fee2e2; color: #dc2626; border: none;">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Network error. Please try again.
+                </div>
+            `;
+        });
+    }
+    
+    function downloadInvoice(orderNumber) {
+        // Create a temporary link and click it
+        const link = document.createElement('a');
+        link.href = `/orders/${orderNumber}/invoice/`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    function renderOrderDetails(order) {
+        // Render order items
+        let itemsHtml = '';
+        if (order.items && order.items.length > 0) {
+            order.items.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="${item.image_url || 'https://via.placeholder.com/50'}" 
+                                     alt="${escapeHtml(item.product_name)}" 
+                                     class="product-image-thumb"
+                                     onerror="this.src='https://via.placeholder.com/50'">
+                                <div>
+                                    <strong>${escapeHtml(item.product_name)}</strong>
+                                    <br>
+                                    <small class="text-muted">SKU: ${item.product_sku}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <td>${item.quantity}</td>
+                        <td>$${parseFloat(item.unit_price).toFixed(2)}</div>
+                        <td class="text-end">$${parseFloat(item.total_price).toFixed(2)}</div>
+                    </tr>
+                `;
+            });
+        } else {
+            itemsHtml = `
+                <tr>
+                    <td colspan="4" class="text-center">No items found</div>
+                </tr>
+            `;
+        }
+        
+        return `
+            <div class="row">
+                <div class="col-md-8">
+                    <h6 class="mb-3"><i class="fas fa-box me-2"></i>Order Items</h6>
+                    <div class="table-responsive">
+                        <table class="order-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-3"><i class="fas fa-receipt me-2"></i>Order Summary</h6>
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal</span>
+                            <span class="summary-value">$${parseFloat(order.subtotal).toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Shipping</span>
+                            <span class="summary-value">$${parseFloat(order.shipping_cost).toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Tax</span>
+                            <span class="summary-value">$${parseFloat(order.tax_amount).toFixed(2)}</span>
+                        </div>
+                        ${order.discount_amount > 0 ? `
+                        <div class="summary-row">
+                            <span class="summary-label">Discount</span>
+                            <span class="summary-value text-danger">-$${parseFloat(order.discount_amount).toFixed(2)}</span>
+                        </div>
+                        ` : ''}
+                        <div class="summary-row">
+                            <span class="summary-label fw-bold">Total</span>
+                            <span class="summary-value summary-total fw-bold">$${parseFloat(order.total_amount).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4"><i class="fas fa-truck me-2"></i>Shipping Information</h6>
+                    <div class="shipping-info">
+                        <p><strong>${escapeHtml(order.shipping_name || order.customer_name || 'N/A')}</strong></p>
+                        <p>${escapeHtml(order.shipping_address || 'N/A')}</p>
+                        <p>${escapeHtml(order.shipping_city || '')} ${escapeHtml(order.shipping_state || '')} ${escapeHtml(order.shipping_zip_code || '')}</p>
+                        <p>${escapeHtml(order.shipping_country || 'N/A')}</p>
+                        <p><i class="fas fa-phone me-2"></i>${escapeHtml(order.shipping_phone || 'N/A')}</p>
+                    </div>
+                    
+                    ${order.tracking_number ? `
+                    <h6 class="mb-3 mt-4"><i class="fas fa-map-marker-alt me-2"></i>Tracking Information</h6>
+                    <div class="shipping-info">
+                        <p><strong>Tracking Number:</strong> ${escapeHtml(order.tracking_number)}</p>
+                        ${order.carrier ? `<p><strong>Carrier:</strong> ${escapeHtml(order.carrier)}</p>` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    <div class="details-action-buttons">
+                        <button onclick="downloadInvoice('${order.order_number}')" class="details-action-btn primary">
+                            <i class="fas fa-download me-1"></i>Download Invoice
+                        </button>
+                        <a href="/orders/${order.order_number}/track/" class="details-action-btn secondary">
+                            <i class="fas fa-truck me-1"></i>Track Order
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

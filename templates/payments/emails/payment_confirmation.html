@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2A2D43;
+            border-bottom: 2px solid #52c41a;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .highlight-box {
+            background-color: #f6ffed;
+            border-left: 4px solid #52c41a;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .payment-amount {
+            font-size: 36px;
+            font-weight: bold;
+            color: #52c41a;
+            margin: 10px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+            text-align: right;
+        }
+        .status-badge {
+            display: inline-block;
+            background-color: #52c41a;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #52c41a;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #389e0d;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .receipt {
+            background-color: #fafafa;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>✓ Payment Confirmed!</h1>
+            <p style="margin: 10px 0 0 0; font-size: 16px;">Your payment has been successfully processed</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Greeting -->
+            <p>Hi {{ customer_name }},</p>
+            <p>Thank you for your payment! Your transaction has been successfully processed.</p>
+
+            <!-- Payment Amount Highlight -->
+            <div class="highlight-box">
+                <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Total Amount Paid</div>
+                <div class="payment-amount">${{ payment.amount|floatformat:2 }}</div>
+                <div style="margin-top: 10px;">
+                    <span class="status-badge">{{ payment.get_status_display }}</span>
+                </div>
+            </div>
+
+            <!-- Payment Details -->
+            <div class="section">
+                <div class="section-title">Payment Details</div>
+                <div class="info-row">
+                    <span class="info-label">Payment ID:</span>
+                    <span class="info-value">{{ payment.payment_id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Transaction ID:</span>
+                    <span class="info-value">{{ payment.gateway_transaction_id|default:"N/A" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payment Method:</span>
+                    <span class="info-value">{{ payment.get_payment_method_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payment Gateway:</span>
+                    <span class="info-value">{{ payment.payment_gateway }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Currency:</span>
+                    <span class="info-value">{{ payment.currency }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payment Date:</span>
+                    <span class="info-value">{{ payment.created_at|date:"M d, Y - H:i" }}</span>
+                </div>
+            </div>
+
+            <!-- Order Information (if applicable) -->
+            {% if payment.order %}
+            <div class="section">
+                <div class="section-title">Related Order</div>
+                <div class="info-row">
+                    <span class="info-label">Order Number:</span>
+                    <span class="info-value">{{ payment.order.order_number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Order Amount:</span>
+                    <span class="info-value">${{ payment.order.total_amount|floatformat:2 }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Order Status:</span>
+                    <span class="info-value">{{ payment.order.get_status_display }}</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Receipt -->
+            <div class="section">
+                <div class="section-title">Receipt</div>
+                <div class="receipt">
+                    ══════════════════════════════════════<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PAYMENT RECEIPT<br>
+                    ══════════════════════════════════════<br><br>
+                    Payment ID: {{ payment.payment_id }}<br>
+                    Date: {{ payment.created_at|date:"M d, Y H:i:s" }}<br>
+                    Status: {{ payment.get_status_display }}<br><br>
+                    ─────────────────────────────────────<br>
+                    Amount: ${{ payment.amount|floatformat:2 }}<br>
+                    Currency: {{ payment.currency }}<br>
+                    Method: {{ payment.get_payment_method_display }}<br>
+                    ─────────────────────────────────────<br><br>
+                    Thank you for your purchase!<br>
+                    ══════════════════════════════════════
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="section" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="font-size: 14px; color: #666; margin: 0;">
+                    <strong>What's Next?</strong><br>
+                    Your order is now confirmed and will be processed shortly. You'll receive a shipment notification with tracking information as soon as your items are dispatched.
+                </p>
+            </div>
+
+            <!-- CTA Button -->
+            <center>
+                <a href="#" class="button">View Your Account</a>
+            </center>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Thank you for your business!</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">
+                Keep this email for your records. This is an automated email. Please do not reply directly.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,485 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Payments - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Payments Management</h1>
+            <p class="text-muted mb-0">Manage and track all payments</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'payments:admin_payment_dashboard' %}" class="btn btn-info">
+                <i class="fas fa-chart-bar me-2"></i> Dashboard
+            </a>
+            <a href="{% url 'payments:export_payments_csv' %}{% if query_params %}?{{ query_params }}{% endif %}" class="btn btn-success">
+                <i class="fas fa-file-csv me-2"></i> Export CSV
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards - UPDATED ONLY -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-money-bill-wave fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Payments</h6>
+                            <h3 class="mb-0 fw-bold">{{ payment_stats.total|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Completed</h6>
+                            <h3 class="mb-0 fw-bold">{{ payment_stats.completed|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0 fw-bold">{{ payment_stats.pending|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Today's Revenue</h6>
+                            <h3 class="mb-0 fw-bold">${{ today_revenue|floatformat:2|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3" id="filterForm">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="">All Status</option>
+                        {% for value, label in payment_status_choices %}
+                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Payment Method</label>
+                    <select name="method" class="form-control">
+                        <option value="">All Methods</option>
+                        {% for value, label in payment_method_choices %}
+                        <option value="{{ value }}" {% if request.GET.method == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date From</label>
+                    <input type="date" name="date_from" class="form-control" 
+                           value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date To</label>
+                    <input type="date" name="date_to" class="form-control" 
+                           value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" 
+                           placeholder="Payment ID, Email, etc..." value="{{ request.GET.q|default:'' }}">
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'payments:admin_payment_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i> Clear Filters
+                    </a>
+                    <button type="button" id="downloadBtn" class="btn btn-success float-end">
+                        <i class="fas fa-download me-1"></i> Download Filtered
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Payments Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">All Payments</h6>
+            <span class="badge bg-primary">Total: {{ payments.paginator.count }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="paymentsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Order</th>
+                            <th class="text-end">Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>
+                                <code>{{ payment.payment_id }}</code>
+                                <br>
+                                <small class="text-muted">{{ payment.gateway_transaction_id|truncatechars:12|default:"" }}</small>
+                            </td>
+                            <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if payment.user %}
+                                <a href="mailto:{{ payment.user.email }}" class="text-decoration-none">
+                                    {{ payment.user.username|truncatechars:15 }}
+                                </a>
+                                <br>
+                                <small>{{ payment.customer_email|truncatechars:20 }}</small>
+                                {% else %}
+                                {{ payment.customer_email|truncatechars:20 }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if payment.order %}
+                                <a href="{% url 'orders:admin_order_detail' payment.order.order_number %}" 
+                                   class="text-decoration-none">
+                                    {{ payment.order.order_number }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <strong>${{ payment.amount|floatformat:2 }}</strong>
+                                <br>
+                                <small class="text-muted">{{ payment.currency }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ payment.get_payment_method_display }}
+                                </span>
+                                <br>
+                                <small>{{ payment.payment_gateway|title }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if payment.status == 'completed' %}success
+                                           {% elif payment.status == 'pending' %}warning
+                                           {% elif payment.status == 'failed' %}danger
+                                           {% elif payment.status == 'refunded' %}secondary
+                                           {% else %}info{% endif %}">
+                                    {{ payment.get_status_display }}
+                                </span>
+                                {% if payment.paid_at %}
+                                <br>
+                                <small class="text-muted">{{ payment.paid_at|date:"M d, Y" }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'payments:admin_payment_detail' payment.payment_id %}" 
+                                       class="btn btn-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if payment.is_refundable %}
+                                    <a href="{% url 'payments:admin_payment_refund' payment.payment_id %}" 
+                                       class="btn btn-warning" title="Refund">
+                                        <i class="fas fa-undo"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="javascript:void(0);" 
+                                       onclick="downloadPaymentDetails('{{ payment.payment_id }}')"
+                                       class="btn btn-info" title="Download Details">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                <i class="fas fa-money-bill-wave fa-2x mb-3"></i>
+                                <p>No payments found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if payments.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if payments.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ payments.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in payments.paginator.page_range %}
+                        {% if payments.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > payments.number|add:'-3' and i < payments.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if query_params %}&{{ query_params }}{% endif %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if payments.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ payments.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Stat Cards - Gradient Style (Only for cards) */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+
+    /* Text styling for cards only */
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Responsive adjustments for cards only */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-md-3 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 100px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-md-3 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle download button
+        const downloadBtn = document.getElementById('downloadBtn');
+        const filterForm = document.getElementById('filterForm');
+        
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+                // Get all form data
+                const formData = new FormData(filterForm);
+                const params = new URLSearchParams();
+                
+                // Add all filter parameters
+                for (const [key, value] of formData.entries()) {
+                    if (value) {
+                        params.append(key, value);
+                    }
+                }
+                
+                // Redirect to export URL with filters
+                const exportUrl = "{% url 'payments:export_payments_csv' %}?" + params.toString();
+                window.location.href = exportUrl;
+            });
+        }
+        
+        // Add download function for individual payment
+        window.downloadPaymentDetails = function(paymentId) {
+            if (confirm('Download payment details?')) {
+                const url = `/payments/admin/payments/${paymentId}/download/`;
+                window.location.href = url;
+            }
+        }
+        
+        // Auto-submit form on date change
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

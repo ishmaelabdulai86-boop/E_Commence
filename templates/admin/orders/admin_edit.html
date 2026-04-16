@@ -1,0 +1,129 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Edit Order - {{ order.order_number }} - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Edit Order: {{ order.order_number }}</h1>
+    <div>
+        <a href="{% url 'orders:admin_order_detail' order.order_number %}" class="btn btn-secondary">
+            <i class="fas fa-times me-2"></i> Cancel
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Order Information</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Shipping Information</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Shipping Address</label>
+                                <input type="text" class="form-control" name="shipping_address" 
+                                       value="{{ order.shipping_address }}" required>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">City</label>
+                                    <input type="text" class="form-control" name="shipping_city" 
+                                           value="{{ order.shipping_city }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">State</label>
+                                    <input type="text" class="form-control" name="shipping_state" 
+                                           value="{{ order.shipping_state }}" required>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Zip Code</label>
+                                    <input type="text" class="form-control" name="shipping_zip_code" 
+                                           value="{{ order.shipping_zip_code }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Country</label>
+                                    <input type="text" class="form-control" name="shipping_country" 
+                                           value="{{ order.shipping_country }}" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" name="shipping_phone" 
+                                       value="{{ order.shipping_phone }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Billing Information</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Billing Address</label>
+                                <input type="text" class="form-control" name="billing_address" 
+                                       value="{{ order.billing_address|default:'' }}">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">City</label>
+                                    <input type="text" class="form-control" name="billing_city" 
+                                           value="{{ order.billing_city|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">State</label>
+                                    <input type="text" class="form-control" name="billing_state" 
+                                           value="{{ order.billing_state|default:'' }}">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Zip Code</label>
+                                    <input type="text" class="form-control" name="billing_zip_code" 
+                                           value="{{ order.billing_zip_code|default:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Country</label>
+                                    <input type="text" class="form-control" name="billing_country" 
+                                           value="{{ order.billing_country|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Notes</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Customer Notes</label>
+                                <textarea class="form-control" name="customer_notes" rows="3">{{ order.customer_notes|default:'' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Admin Notes (Internal)</label>
+                                <textarea class="form-control" name="admin_notes" rows="3">{{ order.admin_notes|default:'' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'orders:admin_order_detail' order.order_number %}" class="btn btn-secondary me-2">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

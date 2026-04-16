@@ -1,0 +1,396 @@
+<!-- notifications/templates/notifications/preferences.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notification Preferences - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Notification Preferences</h1>
+                <div>
+                    <a href="{% url 'notifications:notification_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-bell me-1"></i> View Notifications
+                    </a>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Global Settings -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Global Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="do_not_disturb" 
+                                       name="do_not_disturb" {% if preference.do_not_disturb %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="do_not_disturb">
+                                    Do Not Disturb Mode
+                                </label>
+                                <small class="d-block text-muted">
+                                    Temporarily pause all notifications
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div id="quietHours" {% if not preference.do_not_disturb %}style="display: none;"{% endif %}>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="quiet_hours_start" class="form-label">Quiet Hours Start</label>
+                                    <input type="time" class="form-control" id="quiet_hours_start" 
+                                           name="quiet_hours_start" 
+                                           value="{% if preference.quiet_hours_start %}{{ preference.quiet_hours_start|time:'H:i' }}{% else %}22:00{% endif %}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="quiet_hours_end" class="form-label">Quiet Hours End</label>
+                                    <input type="time" class="form-control" id="quiet_hours_end" 
+                                           name="quiet_hours_end" 
+                                           value="{% if preference.quiet_hours_end %}{{ preference.quiet_hours_end|time:'H:i' }}{% else %}08:00{% endif %}">
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Notifications will be paused during these hours
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Preferences -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Email Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="email_order_updates" 
+                                       name="email_order_updates" {% if preference.email_order_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="email_order_updates">
+                                    Order Updates
+                                </label>
+                                <small class="d-block text-muted">
+                                    Order confirmations, status changes, and cancellations
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="email_payment_updates" 
+                                       name="email_payment_updates" {% if preference.email_payment_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="email_payment_updates">
+                                    Payment Updates
+                                </label>
+                                <small class="d-block text-muted">
+                                    Payment confirmations, receipts, and failed payments
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="email_shipping_updates" 
+                                       name="email_shipping_updates" {% if preference.email_shipping_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="email_shipping_updates">
+                                    Shipping Updates
+                                </label>
+                                <small class="d-block text-muted">
+                                    Shipping confirmations and delivery notifications
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="email_promotions" 
+                                       name="email_promotions" {% if preference.email_promotions %}checked{% endif %}>
+                                <label class="form-check-label" for="email_promotions">
+                                    Promotions & Offers
+                                </label>
+                                <small class="d-block text-muted">
+                                    Special offers, discounts, and newsletter
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="email_account_updates" 
+                                       name="email_account_updates" {% if preference.email_account_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="email_account_updates">
+                                    Account Updates
+                                </label>
+                                <small class="d-block text-muted">
+                                    Security alerts, password changes, and profile updates
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMS Preferences -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">SMS Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle me-1"></i> Standard carrier rates may apply</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sms_order_updates" 
+                                       name="sms_order_updates" {% if preference.sms_order_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="sms_order_updates">
+                                    Order Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sms_payment_updates" 
+                                       name="sms_payment_updates" {% if preference.sms_payment_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="sms_payment_updates">
+                                    Payment Updates (OTP)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sms_shipping_updates" 
+                                       name="sms_shipping_updates" {% if preference.sms_shipping_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="sms_shipping_updates">
+                                    Shipping Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="sms_promotions" 
+                                       name="sms_promotions" {% if preference.sms_promotions %}checked{% endif %}>
+                                <label class="form-check-label" for="sms_promotions">
+                                    Promotions & Offers
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Push Notification Preferences -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Push Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="push_order_updates" 
+                                       name="push_order_updates" {% if preference.push_order_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="push_order_updates">
+                                    Order Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="push_payment_updates" 
+                                       name="push_payment_updates" {% if preference.push_payment_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="push_payment_updates">
+                                    Payment Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="push_shipping_updates" 
+                                       name="push_shipping_updates" {% if preference.push_shipping_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="push_shipping_updates">
+                                    Shipping Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="push_promotions" 
+                                       name="push_promotions" {% if preference.push_promotions %}checked{% endif %}>
+                                <label class="form-check-label" for="push_promotions">
+                                    Promotions & Offers
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WhatsApp Preferences -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">WhatsApp Messages</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle me-1"></i> Requires WhatsApp on your mobile device</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="whatsapp_order_updates" 
+                                       name="whatsapp_order_updates" {% if preference.whatsapp_order_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="whatsapp_order_updates">
+                                    Order Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="whatsapp_payment_updates" 
+                                       name="whatsapp_payment_updates" {% if preference.whatsapp_payment_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="whatsapp_payment_updates">
+                                    Payment Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="whatsapp_shipping_updates" 
+                                       name="whatsapp_shipping_updates" {% if preference.whatsapp_shipping_updates %}checked{% endif %}>
+                                <label class="form-check-label" for="whatsapp_shipping_updates">
+                                    Shipping Updates
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="whatsapp_promotions" 
+                                       name="whatsapp_promotions" {% if preference.whatsapp_promotions %}checked{% endif %}>
+                                <label class="form-check-label" for="whatsapp_promotions">
+                                    Promotions & Offers
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Notification Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Test Notifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">Send a test notification to verify your settings</p>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <select class="form-select" id="test_notification_type" name="test_notification_type">
+                                    <option value="email">Email</option>
+                                    <option value="sms">SMS</option>
+                                    <option value="push">Push Notification</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select" id="test_category" name="test_category">
+                                    <option value="order">Order</option>
+                                    <option value="payment">Payment</option>
+                                    <option value="shipping">Shipping</option>
+                                    <option value="promotional">Promotional</option>
+                                    <option value="system">System</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-primary w-100" 
+                                        onclick="sendTestNotification()">
+                                    Send Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'notifications:notification_list' %}" class="btn btn-outline-secondary me-md-2">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Save Preferences
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle quiet hours visibility based on do not disturb switch
+document.getElementById('do_not_disturb').addEventListener('change', function() {
+    const quietHoursDiv = document.getElementById('quietHours');
+    if (this.checked) {
+        quietHoursDiv.style.display = 'block';
+    } else {
+        quietHoursDiv.style.display = 'none';
+    }
+});
+
+// Send test notification
+function sendTestNotification() {
+    const notificationType = document.getElementById('test_notification_type').value;
+    const category = document.getElementById('test_category').value;
+    
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "notifications:test_notification" %}';
+    
+    // Add CSRF token
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    form.appendChild(csrfInput);
+    
+    // Add notification type
+    const typeInput = document.createElement('input');
+    typeInput.type = 'hidden';
+    typeInput.name = 'notification_type';
+    typeInput.value = notificationType;
+    form.appendChild(typeInput);
+    
+    // Add category
+    const categoryInput = document.createElement('input');
+    categoryInput.type = 'hidden';
+    categoryInput.name = 'category';
+    categoryInput.value = category;
+    form.appendChild(categoryInput);
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Initialize quiet hours visibility on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const doNotDisturb = document.getElementById('do_not_disturb');
+    const quietHoursDiv = document.getElementById('quietHours');
+    if (!doNotDisturb.checked) {
+        quietHoursDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

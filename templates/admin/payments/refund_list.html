@@ -1,0 +1,452 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Refunds - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Refund Management</h1>
+            <p class="text-muted mb-0">Manage and process refund requests</p>
+        </div>
+        <div>
+            <a href="{% url 'payments:admin_payment_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-credit-card me-2"></i> View Payments
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards - All 4 in one row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-undo fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Refunds</h6>
+                            <h3 class="mb-0 fw-bold">{{ refund_stats.total|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0 fw-bold">{{ refund_stats.pending|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Completed</h6>
+                            <h3 class="mb-0 fw-bold">{{ refund_stats.completed|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Refunded</h6>
+                            <h3 class="mb-0 fw-bold">${{ total_refunded_amount|floatformat:2|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="">All Status</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="processing" {% if request.GET.status == 'processing' %}selected{% endif %}>Processing</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" name="date_from" class="form-control" 
+                           value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" name="date_to" class="form-control" 
+                           value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Refunds Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">All Refunds</h6>
+            <span class="badge bg-primary">{{ refunds.paginator.count }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="refundsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Refund ID</th>
+                            <th>Payment</th>
+                            <th>Customer</th>
+                            <th class="text-end">Amount</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Requested</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for refund in refunds %}
+                        <tr>
+                            <td>
+                                <code>{{ refund.refund_id }}</code>
+                            </td>
+                            <td>
+                                {% if refund.payment %}
+                                <a href="{% url 'payments:admin_payment_detail' refund.payment.payment_id %}" 
+                                   class="text-decoration-none">
+                                    {{ refund.payment.payment_id|truncatechars:10 }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if refund.requested_by %}
+                                {{ refund.requested_by.username|truncatechars:15 }}
+                                {% elif refund.payment and refund.payment.user %}
+                                {{ refund.payment.user.username|truncatechars:15 }}
+                                {% else %}
+                                <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <strong>${{ refund.amount|floatformat:2 }}</strong>
+                                <br>
+                                <small class="text-muted">{{ refund.currency }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ refund.get_reason_display|truncatechars:20 }}
+                                </span>
+                                {% if refund.description %}
+                                <br>
+                                <small class="text-muted" title="{{ refund.description }}">
+                                    {{ refund.description|truncatechars:30 }}
+                                </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if refund.status == 'completed' %}success
+                                           {% elif refund.status == 'pending' %}warning
+                                           {% elif refund.status == 'processing' %}primary
+                                           {% elif refund.status == 'failed' %}danger
+                                           {% else %}info{% endif %}">
+                                    {{ refund.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ refund.requested_at|date:"M d, Y" }}
+                                <br>
+                                <small class="text-muted">{{ refund.requested_at|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'payments:admin_refund_detail' refund.id %}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if refund.status == 'pending' or refund.status == 'processing' %}
+                                    <a href="{% url 'payments:admin_update_refund_status' refund.id %}" 
+                                       class="btn btn-success">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                <i class="fas fa-undo fa-2x mb-3"></i>
+                                <p>No refunds found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if refunds.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if refunds.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ refunds.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in refunds.paginator.page_range %}
+                        {% if refunds.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > refunds.number|add:'-3' and i < refunds.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">{{ i }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if refunds.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ refunds.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Stat Cards - Gradient Style (Only for the 4 cards) */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+
+    /* Text styling for cards only */
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Responsive adjustments for cards only */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-md-3 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 100px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-md-3 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Quick status update buttons
+        const quickUpdateButtons = document.querySelectorAll('.btn-success');
+        quickUpdateButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const statusMap = {
+                    'pending': 'processing',
+                    'processing': 'completed',
+                };
+                const refundId = this.href.split('/').slice(-2, -1)[0];
+                const currentStatus = this.closest('tr').querySelector('.badge').textContent.trim().toLowerCase();
+                const newStatus = statusMap[currentStatus] || 'completed';
+                
+                if (confirm(`Mark this refund as ${newStatus}?`)) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = this.href;
+                    
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = '{{ csrf_token }}';
+                    
+                    const statusInput = document.createElement('input');
+                    statusInput.type = 'hidden';
+                    statusInput.name = 'status';
+                    statusInput.value = newStatus;
+                    
+                    form.appendChild(csrfInput);
+                    form.appendChild(statusInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %}

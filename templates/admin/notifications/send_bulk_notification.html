@@ -1,0 +1,658 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Send Bulk Notification{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-paper-plane me-2"></i>Send Bulk Notification
+            </h1>
+            <p class="text-muted mb-0">Send notifications to multiple users</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_notification_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Bulk Notification Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Notification Settings
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Notification Type -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Notification Type *</label>
+                                <select name="notification_type" class="form-select" required>
+                                    <option value="">Select Type</option>
+                                    {% for type_value, type_label in notification_types %}
+                                    <option value="{{ type_value }}">{{ type_label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Choose the type of notification to send</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Category *</label>
+                                <select name="category" class="form-select" required>
+                                    <option value="">Select Category</option>
+                                    {% for category_value, category_label in categories %}
+                                    <option value="{{ category_value }}">{{ category_label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Choose the notification category</small>
+                            </div>
+                        </div>
+
+                        <!-- Template Selection -->
+                        <div class="mb-4">
+                            <label class="form-label">Template *</label>
+                            <select name="template_name" class="form-select" required>
+                                <option value="">Select Template</option>
+                                {% for template in templates %}
+                                <option value="{{ template.name }}" data-template-id="{{ template.id }}">
+                                    {{ template.name }} ({{ template.get_template_type_display }} - {{ template.get_category_display }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Choose a pre-defined template</small>
+                        </div>
+
+                        <!-- Custom Message -->
+                        <div class="mb-4">
+                            <label class="form-label">Custom Message (Optional)</label>
+                            <textarea name="message" class="form-control" rows="4" 
+                                    placeholder="Enter a custom message that will be included in the notification..."></textarea>
+                            <small class="text-muted">This message will be appended to the template content</small>
+                        </div>
+
+                        <!-- User Selection -->
+                        <div class="mb-4">
+                            <label class="form-label">Send To *</label>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="send_to_all" id="send_to_all">
+                                    <label class="form-check-label" for="send_to_all">
+                                        Send to all active users
+                                    </label>
+                                    <small class="text-muted d-block">This will send notifications to all users with active accounts.</small>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <label class="form-label">Or select specific users:</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" placeholder="Search for users..." 
+                                               id="userSearch" onkeyup="searchUsers()">
+                                        <button class="btn btn-outline-secondary" type="button">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="mt-2 border rounded p-2" style="max-height: 200px; overflow-y: auto;" id="userList">
+                                        <!-- User list will be populated via JavaScript -->
+                                        <div class="text-center py-3">
+                                            <i class="fas fa-users text-muted"></i>
+                                            <p class="text-muted mb-0">User search will appear here</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview and Send -->
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#previewModal">
+                                <i class="fas fa-eye me-1"></i>Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i>Send Bulk Notification
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Statistics -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>User Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Total Users</span>
+                            <strong id="totalUsers">0</strong>
+                        </div>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar" id="totalUsersBar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Active Users</span>
+                            <strong id="activeUsers">0</strong>
+                        </div>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" id="activeUsersBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Selected Users</span>
+                            <strong id="selectedUsers">0</strong>
+                        </div>
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-primary" id="selectedUsersBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Tips & Guidelines
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Best Practices:</strong>
+                    </div>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Test with a small group first
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Personalize messages when possible
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Avoid sending during quiet hours
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Respect user preferences
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Monitor delivery rates
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Notification Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    This is a preview of what your notification will look like.
+                </div>
+                <div class="border rounded p-4">
+                    <h5 id="previewTitle">Notification Title</h5>
+                    <hr>
+                    <div id="previewContent">
+                        Notification content will appear here...
+                    </div>
+                    <div class="mt-3" id="previewCustomMessage"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Looks Good</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch user statistics
+    fetchUserStatistics();
+    
+    // Setup send_to_all checkbox
+    const sendToAllCheckbox = document.getElementById('send_to_all');
+    if (sendToAllCheckbox) {
+        sendToAllCheckbox.addEventListener('change', function() {
+            const userSearch = document.getElementById('userSearch');
+            const userList = document.getElementById('userList');
+            
+            if (this.checked) {
+                // Disable user search when send_to_all is checked
+                userSearch.disabled = true;
+                userSearch.value = '';
+                userList.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <p class="text-muted mb-0">Sending to all active users (excluding staff)</p>
+                    </div>
+                `;
+                // Uncheck all user checkboxes
+                document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
+            } else {
+                // Re-enable user search
+                userSearch.disabled = false;
+                userList.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="fas fa-search text-muted"></i>
+                        <p class="text-muted mb-0">Start typing to search for users</p>
+                    </div>
+                `;
+            }
+            updateSelectedUsersCount();
+        });
+    }
+    
+    // Setup preview modal
+    setupPreviewModal();
+    
+    // Form submission validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const sendToAll = document.getElementById('send_to_all').checked;
+            const selectedUsers = document.querySelectorAll('.user-checkbox:checked').length;
+            
+            if (!sendToAll && selectedUsers === 0) {
+                e.preventDefault();
+                alert('Please either select "Send to all active users" or choose specific users to send notifications to.');
+                return false;
+            }
+            
+            return true;
+        });
+    }
+});
+
+function fetchUserStatistics() {
+    // In a real implementation, you would fetch this data from an API
+    // For now, we'll use dummy data
+    const totalUsers = 1000;
+    const activeUsers = 850;
+    const selectedUsers = 0;
+    
+    document.getElementById('totalUsers').textContent = totalUsers.toLocaleString();
+    document.getElementById('activeUsers').textContent = activeUsers.toLocaleString();
+    document.getElementById('selectedUsers').textContent = selectedUsers.toLocaleString();
+    
+    const activePercentage = (activeUsers / totalUsers) * 100;
+    document.getElementById('activeUsersBar').style.width = `${activePercentage}%`;
+    
+    const selectedPercentage = (selectedUsers / totalUsers) * 100;
+    document.getElementById('selectedUsersBar').style.width = `${selectedPercentage}%`;
+}
+
+function searchUsers() {
+    const searchTerm = document.getElementById('userSearch').value.toLowerCase().trim();
+    const userList = document.getElementById('userList');
+    const sendToAll = document.getElementById('send_to_all').checked;
+    
+    // Disable search if send_to_all is checked
+    if (sendToAll) {
+        userList.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-check-circle text-success"></i>
+                <p class="text-muted mb-0">Sending to all active users</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Clear current list
+    userList.innerHTML = '';
+    
+    if (searchTerm.length < 2) {
+        userList.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-search text-muted"></i>
+                <p class="text-muted mb-0">Type at least 2 characters to search</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Show loading
+    userList.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            <p class="text-muted mb-0 mt-2">Searching users...</p>
+        </div>
+    `;
+    
+    // Fetch real users from API
+    fetch(`/notifications/api/search-users/?q=${encodeURIComponent(searchTerm)}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        userList.innerHTML = '';
+        
+        if (!data.success) {
+            userList.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-exclamation-circle text-danger"></i>
+                    <p class="text-danger mb-0">${data.error || 'Error fetching users'}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const users = data.users;
+        
+        if (users.length === 0) {
+            userList.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-user-slash text-muted"></i>
+                    <p class="text-muted mb-0">No users found</p>
+                </div>
+            `;
+            return;
+        }
+        
+        users.forEach(user => {
+            const userItem = document.createElement('div');
+            userItem.className = 'form-check mb-2';
+            const displayName = user.display_name || user.username;
+            userItem.innerHTML = `
+                <input class="form-check-input user-checkbox" type="checkbox" 
+                       name="user_ids" value="${user.id}" id="user_${user.id}">
+                <label class="form-check-label" for="user_${user.id}">
+                    <div>
+                        <strong>${displayName}</strong>
+                        <br>
+                        <small class="text-muted">${user.username} (${user.email})</small>
+                    </div>
+                </label>
+            `;
+            userList.appendChild(userItem);
+        });
+        
+        // Add event listeners to checkboxes
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedUsersCount);
+        });
+        
+        updateSelectedUsersCount();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        userList.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-exclamation-circle text-danger"></i>
+                <p class="text-danger mb-0">Error fetching users. Please try again.</p>
+            </div>
+        `;
+    });
+}
+
+function updateSelectedUsersCount() {
+    const selectedCount = document.querySelectorAll('.user-checkbox:checked').length;
+    document.getElementById('selectedUsers').textContent = selectedCount;
+    
+    const totalUsers = parseInt(document.getElementById('totalUsers').textContent.replace(/,/g, ''));
+    const selectedPercentage = (selectedCount / totalUsers) * 100;
+    document.getElementById('selectedUsersBar').style.width = `${Math.min(selectedPercentage, 100)}%`;
+}
+
+function setupPreviewModal() {
+    // Get the modal element
+    const previewModal = document.getElementById('previewModal');
+    if (!previewModal) {
+        console.error('Preview modal not found');
+        return;
+    }
+    
+    // Use Bootstrap modal event to populate content when modal is about to show
+    previewModal.addEventListener('show.bs.modal', function(e) {
+        console.log('Modal show event triggered');
+        populatePreview();
+    });
+    
+    // Handle modal hidden event to clear any pending operations
+    previewModal.addEventListener('hidden.bs.modal', function(e) {
+        console.log('Modal hidden event triggered');
+    });
+}
+
+function populatePreview() {
+    try {
+        // Get form values
+        const templateSelect = document.querySelector('select[name="template_name"]');
+        const notificationType = document.querySelector('select[name="notification_type"]').value;
+        const customMessage = document.querySelector('textarea[name="message"]').value;
+        
+        const templateName = templateSelect.value;
+        const templateOption = templateSelect.options[templateSelect.selectedIndex];
+        
+        if (!templateName) {
+            document.getElementById('previewTitle').textContent = 'Preview';
+            document.getElementById('previewContent').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Please select a template to preview
+                </div>
+            `;
+            document.getElementById('previewCustomMessage').innerHTML = '';
+            return;
+        }
+        
+        if (!notificationType) {
+            document.getElementById('previewTitle').textContent = 'Preview';
+            document.getElementById('previewContent').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Please select a notification type
+                </div>
+            `;
+            document.getElementById('previewCustomMessage').innerHTML = '';
+            return;
+        }
+        
+        // Get template ID from the option element
+        const templateId = templateOption.dataset.templateId;
+        
+        if (!templateId) {
+            document.getElementById('previewTitle').textContent = `Preview: ${escapeHtml(templateName)}`;
+            document.getElementById('previewContent').innerHTML = `
+                <p>Template: <strong>${escapeHtml(templateName)}</strong></p>
+                <p class="text-muted">Type: ${escapeHtml(notificationType)}</p>
+            `;
+            if (customMessage) {
+                document.getElementById('previewCustomMessage').innerHTML = `
+                    <div class="alert alert-light">
+                        <strong>Custom Message:</strong><br>
+                        <div style="white-space: pre-wrap;">
+                            ${escapeHtml(customMessage)}
+                        </div>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
+        // Show loading state
+        document.getElementById('previewTitle').textContent = 'Loading Preview...';
+        document.getElementById('previewContent').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Fetching template content...</p>
+            </div>
+        `;
+        document.getElementById('previewCustomMessage').innerHTML = '';
+        
+        // Fetch template content from API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        fetch(`/notifications/api/template-preview/${templateId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            signal: controller.signal
+        })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const template = data.template;
+                document.getElementById('previewTitle').textContent = `Preview: ${escapeHtml(template.name)}`;
+                
+                // Show appropriate content based on notification type
+                let previewContent = '';
+                
+                if (notificationType === 'email') {
+                    previewContent = `
+                        <div>
+                            <div class="mb-3">
+                                <strong>Subject:</strong> 
+                                <div class="bg-light p-2 rounded mt-1">${escapeHtml(template.subject) || '(No subject)'}</div>
+                            </div>
+                            <hr>
+                            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6;">
+                                ${template.html_content || template.text_content || '<em>No content available</em>'}
+                            </div>
+                        </div>
+                    `;
+                } else if (notificationType === 'sms') {
+                    previewContent = `
+                        <div class="alert alert-light" style="border-left: 4px solid #17a2b8;">
+                            <strong>SMS Message:</strong><br>
+                            <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; white-space: pre-wrap;">
+                                ${escapeHtml(template.text_content || 'No content')}
+                            </div>
+                        </div>
+                    `;
+                } else if (notificationType === 'push') {
+                    previewContent = `
+                        <div class="alert alert-light" style="border-left: 4px solid #ffc107;">
+                            <div><strong>Title:</strong> 
+                                <div class="bg-white p-2 rounded mt-1 border">${escapeHtml(template.subject) || 'Notification'}</div>
+                            </div>
+                            <div class="mt-3"><strong>Body:</strong><br>
+                                <div class="bg-white p-2 rounded mt-1 border" style="max-height: 150px; overflow-y: auto; white-space: pre-wrap;">
+                                    ${escapeHtml(template.push_content || template.text_content || 'No content')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    previewContent = `
+                        <p>Template: <strong>${escapeHtml(template.name)}</strong></p>
+                        <p class="text-muted">Type: ${escapeHtml(template.type)}</p>
+                    `;
+                }
+                
+                document.getElementById('previewContent').innerHTML = previewContent;
+                
+                // Show custom message if provided
+                if (customMessage) {
+                    document.getElementById('previewCustomMessage').innerHTML = `
+                        <div class="alert alert-info mb-0 mt-3">
+                            <strong>Custom Message to Append:</strong><br>
+                            <div style="margin-top: 10px; white-space: pre-wrap;">
+                                ${escapeHtml(customMessage)}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('previewCustomMessage').innerHTML = '';
+                }
+            } else {
+                document.getElementById('previewTitle').textContent = 'Error';
+                document.getElementById('previewContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        ${escapeHtml(data.error) || 'Error loading template'}
+                    </div>
+                `;
+                document.getElementById('previewCustomMessage').innerHTML = '';
+            }
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            console.error('Fetch error:', error);
+            
+            // Check if error is due to abort (timeout)
+            if (error.name === 'AbortError') {
+                document.getElementById('previewTitle').textContent = 'Error';
+                document.getElementById('previewContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Request timed out. Please try again.
+                    </div>
+                `;
+            } else {
+                document.getElementById('previewTitle').textContent = 'Error';
+                document.getElementById('previewContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error loading preview: ${escapeHtml(error.message || 'Unknown error')}
+                    </div>
+                `;
+            }
+            document.getElementById('previewCustomMessage').innerHTML = '';
+        });
+    } catch (error) {
+        console.error('Error in populatePreview:', error);
+        document.getElementById('previewTitle').textContent = 'Error';
+        document.getElementById('previewContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Unexpected error: ${escapeHtml(error.message)}
+            </div>
+        `;
+        document.getElementById('previewCustomMessage').innerHTML = '';
+    }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
+{% endblock %}

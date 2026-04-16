@@ -1,0 +1,274 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}{{ category.name }} - Category Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ category.name }}</h1>
+            <p class="text-muted mb-0">
+                {% if category.icon %}
+                <i class="fas {{ category.icon }} me-2"></i>
+                {% endif %}
+                Category Details
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'products:admin_category_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Categories
+            </a>
+            <a href="{% url 'products:admin_category_edit' category.id %}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i> Edit Category
+            </a>
+        </div>
+    </div>
+    
+    <!-- Category Info -->
+    <div class="row">
+        <!-- Left Column - Category Image & Stats -->
+        <div class="col-lg-4 mb-4">
+            <!-- Category Image Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-image me-2"></i>Category Image</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Main Image Display -->
+                    <div class="text-center" style="position: relative; height: 300px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border-radius: 8px; overflow: hidden;">
+                        {% if category.image %}
+                        <img src="{{ category.image.url }}" 
+                             alt="{{ category.name }}" 
+                             class="img-fluid rounded" 
+                             style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                        {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-folder fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No image uploaded</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Total Products</small>
+                        <div class="h5 mb-0">{{ category.products.count }}</div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="mb-3">
+                        <small class="text-muted">Active Products</small>
+                        <div class="h5 mb-0">{{ category.active_products_count }}</div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="mb-3">
+                        <small class="text-muted">Subcategories</small>
+                        <div class="h5 mb-0">{{ category.children.count }}</div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="mb-0">
+                        <small class="text-muted">Status</small>
+                        <div class="mt-1">
+                            {% if category.is_active %}
+                            <span class="badge bg-success"><i class="fas fa-check me-1"></i>Active</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Inactive</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Details -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Category Name</label>
+                            <div class="form-control-plaintext h5">{{ category.name }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Slug</label>
+                            <div class="form-control-plaintext"><code>{{ category.slug }}</code></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Icon Class</label>
+                            <div class="form-control-plaintext">
+                                {% if category.icon %}
+                                <code>{{ category.icon }}</code>
+                                <span class="ms-2"><i class="fas {{ category.icon }}"></i></span>
+                                {% else %}
+                                <span class="text-muted">Not set</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Created</label>
+                            <div class="form-control-plaintext">{{ category.created_at|date:"F d, Y h:i A" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hierarchy -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-sitemap me-2"></i>Category Hierarchy</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Parent Category</label>
+                            <div class="form-control-plaintext">
+                                {% if category.parent %}
+                                <a href="{% url 'products:admin_category_detail' category.parent.id %}" class="text-decoration-none">
+                                    {{ category.parent.name }}
+                                </a>
+                                {% else %}
+                                <span class="badge bg-secondary">Main Category</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Subcategories</label>
+                            <div class="form-control-plaintext">
+                                {{ category.children.count }}
+                                {% if category.children.count > 0 %}
+                                <span class="badge bg-info ms-2">{{ category.children.count }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if category.children.all %}
+                    <hr class="my-3">
+                    <label class="form-label text-muted d-block mb-2">Subcategories List</label>
+                    <div class="row">
+                        {% for child in category.children.all %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-angle-right text-muted"></i>
+                                <a href="{% url 'products:admin_category_detail' child.id %}" class="text-decoration-none">
+                                    {{ child.name }}
+                                </a>
+                                <span class="badge bg-light text-dark ms-auto">{{ child.products.count }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Description -->
+            {% if category.description %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-control-plaintext">{{ category.description|linebreaks }}</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Products in Category -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-box me-2"></i>Products in This Category</h6>
+                    <a href="{% url 'products:admin_product_list' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if category.products.all %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>SKU</th>
+                                    <th>Price</th>
+                                    <th>Stock</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in category.products.all|slice:":8" %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'products:admin_product_detail' product.id %}" class="text-decoration-none">
+                                            {{ product.name|truncatechars:35 }}
+                                        </a>
+                                    </td>
+                                    <td><code class="text-muted">{{ product.sku }}</code></td>
+                                    <td>${{ product.price }}</td>
+                                    <td>
+                                        {% if product.stock == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                        {% elif product.stock <= product.low_stock_threshold %}
+                                        <span class="badge bg-warning">{{ product.stock }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success">{{ product.stock }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if product.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'products:admin_product_detail' product.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if category.products.count > 8 %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Showing 8 of {{ category.products.count }} products</small>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No products in this category yet</p>
+                        <a href="{% url 'products:admin_product_create' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i>Add Product
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any JavaScript functionality here if needed
+    });
+</script>
+{% endblock %}

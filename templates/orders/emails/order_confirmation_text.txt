@@ -1,0 +1,54 @@
+ORDER CONFIRMATION
+==================
+
+Hi {{ customer_name }},
+
+Thank you for your purchase! We've received your order and we're preparing it for shipment.
+
+ORDER DETAILS
+=============
+Order Number: {{ order.order_number }}
+Order Date: {{ order.created_at|date:"F d, Y H:i" }}
+Status: Confirmed
+
+ITEMS ORDERED
+=============
+{% for item in order_items %}
+- {{ item.product_name }} (SKU: {{ item.product_sku }})
+  Quantity: {{ item.quantity }}
+  Unit Price: ${{ item.unit_price|floatformat:2 }}
+  Total: ${{ item.total_price|floatformat:2 }}
+{% endfor %}
+
+ORDER SUMMARY
+=============
+Subtotal:          ${{ order.subtotal|floatformat:2 }}
+Shipping:          ${{ order.shipping_cost|floatformat:2 }}
+Tax:               ${{ order.tax_amount|floatformat:2 }}
+{% if order.discount_amount > 0 %}Discount:          -${{ order.discount_amount|floatformat:2 }}
+{% endif %}--- Grand Total: ${{ order.total_amount|floatformat:2 }} ---
+
+SHIPPING ADDRESS
+================
+{{ order.shipping_address }}
+{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_zip_code }}
+{{ order.shipping_country }}
+
+Contact: {{ order.shipping_phone }}
+
+WHAT'S NEXT?
+============
+✓ We're preparing your order for shipment
+✓ You'll receive a shipping notification with tracking information
+✓ Estimated delivery: 3-7 business days
+✓ Track your order status anytime on our website
+
+NEED HELP?
+==========
+Questions about your order? Contact our support team:
+📧 Email: support@techstore.com
+🌐 Website: https://www.techstore.com
+
+Thank you for choosing TechStore!
+
+© {% now "Y" %} TechStore. All rights reserved.

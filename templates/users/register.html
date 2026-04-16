@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - TechStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">Create Account</h2>
+                    
+                    <form method="POST">
+                        
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ form.non_field_errors }}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">{{ form.username.label }}</label>
+                                {{ form.username }}
+                                <small class="text-muted">{{ form.username.help_text }}</small>
+                                {{ form.username.errors }}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                {{ form.email.errors }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone Number *</label>
+                                <input type="tel" name="phone" id="phone" class="form-control" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="role" class="form-label">Account Type</label>
+                                <select name="role" id="role" class="form-select">
+                                    <option value="customer">Customer</option>
+                                    <option value="seller">Seller</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password1" class="form-label">Password *</label>
+                                <input type="password" name="password1" id="password1" class="form-control" required>
+                                <small class="text-muted">
+                                    Your password must contain at least 8 characters.
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="password2" class="form-label">Confirm Password *</label>
+                                <input type="password" name="password2" id="password2" class="form-control" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input type="checkbox" class="form-check-input" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="/terms/">Terms of Service</a> and <a href="/privacy/">Privacy Policy</a>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary-custom w-100 btn-lg mb-3">
+                            Create Account
+                        </button>
+                        
+                        <div class="text-center">
+                            <p class="mb-0">Already have an account?</p>
+                            <a href="{% url 'users:login' %}" class="btn btn-outline-primary-custom mt-2">
+                                Login Here
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Benefits of Registration</h5>
+                    <ul class="mb-0">
+                        <li>Faster checkout process</li>
+                        <li>Order tracking and history</li>
+                        <li>Wishlist feature</li>
+                        <li>Exclusive discounts and offers</li>
+                        <li>Personalized recommendations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

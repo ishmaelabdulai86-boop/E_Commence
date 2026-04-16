@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - TechStore{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Checkout</h1>
+    
+    <div class="row">
+        <!-- Checkout Form -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Progress Bar -->
+                    <div class="progress mb-4" style="height: 10px;">
+                        <div class="progress-bar bg-primary-custom" style="width: 33%;"></div>
+                    </div>
+                    
+                    <!-- Billing Address -->
+                    <h5 class="mb-3">1. Billing Address</h5>
+                    <form id="checkoutForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" class="form-control" name="first_name" required value="{{ user.first_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" name="last_name" required value="{{ user.last_name }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" required value="{{ user.email }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-control" name="phone" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Address *</label>
+                            <input type="text" class="form-control" name="address" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">City *</label>
+                                <input type="text" class="form-control" name="city" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">State *</label>
+                                <select class="form-select" name="state" required>
+                                    <option value="">Select State</option>
+                                    <!-- Add states here -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ZIP Code *</label>
+                                <input type="text" class="form-control" name="zip_code" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Country *</label>
+                                <select class="form-select" name="country" required>
+                                    <option value="US">United States</option>
+                                    <option value="NG">Nigeria</option>
+                                    <option value="GH">Ghana</option>
+                                    <option value="KE">Kenya</option>
+                                    <!-- Add more countries -->
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="saveAddress">
+                            <label class="form-check-label" for="saveAddress">
+                                Save this address for future orders
+                            </label>
+                        </div>
+                        
+                        <!-- Shipping Method -->
+                        <h5 class="mt-4 mb-3">2. Shipping Method</h5>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="shipping" id="standard" value="standard" checked>
+                            <label class="form-check-label" for="standard">
+                                Standard Shipping (3-7 business days)
+                                {% if cart_total > 50 %}
+                                <span class="text-success float-end">FREE</span>
+                                {% else %}
+                                <span class="float-end">$5.99</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="shipping" id="express" value="express">
+                            <label class="form-check-label" for="express">
+                                Express Shipping (1-2 business days)
+                                <span class="float-end">$12.99</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="shipping" id="overnight" value="overnight">
+                            <label class="form-check-label" for="overnight">
+                                Overnight Shipping
+                                <span class="float-end">$24.99</span>
+                            </label>
+                        </div>
+                        
+                        <!-- Payment Method -->
+                        <h5 class="mt-4 mb-3">3. Payment Method</h5>
+                        <div class="nav nav-pills nav-fill mb-3" id="payment-tab">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#card" type="button">
+                                <i class="fas fa-credit-card me-2"></i>Credit/Debit Card
+                            </button>
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#paypal" type="button">
+                                <i class="fab fa-paypal me-2"></i>PayPal
+                            </button>
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#paystack" type="button">
+                                <i class="fas fa-mobile-alt me-2"></i>Paystack
+                            </button>
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#momo" type="button">
+                                <i class="fas fa-money-bill-wave me-2"></i>Mobile Money
+                            </button>
+                        </div>
+                        
+                        <div class="tab-content">
+                            <!-- Card Payment -->
+                            <div class="tab-pane fade show active" id="card">
+                                <div class="mb-3">
+                                    <label class="form-label">Card Number *</label>
+                                    <input type="text" class="form-control" name="card_number" placeholder="1234 5678 9012 3456">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Expiry Date *</label>
+                                        <input type="text" class="form-control" name="expiry" placeholder="MM/YY">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">CVV *</label>
+                                        <input type="text" class="form-control" name="cvv" placeholder="123">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Cardholder Name *</label>
+                                    <input type="text" class="form-control" name="card_name">
+                                </div>
+                            </div>
+                            
+                            <!-- PayPal -->
+                            <div class="tab-pane fade" id="paypal">
+                                <div class="alert alert-info">
+                                    <i class="fab fa-paypal fa-lg me-2"></i>
+                                    You will be redirected to PayPal to complete your payment.
+                                </div>
+                            </div>
+                            
+                            <!-- Paystack -->
+                            <div class="tab-pane fade" id="paystack">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-mobile-alt fa-lg me-2"></i>
+                                    Paystack supports card payments and bank transfers across Africa.
+                                </div>
+                            </div>
+                            
+                            <!-- Mobile Money -->
+                            <div class="tab-pane fade" id="momo">
+                                <div class="mb-3">
+                                    <label class="form-label">Provider *</label>
+                                    <select class="form-select" name="momo_provider">
+                                        <option value="mtn">MTN Mobile Money</option>
+                                        <option value="vodafone">Vodafone Cash</option>
+                                        <option value="airtel">Airtel Money</option>
+                                        <option value="tigo">Tigo Cash</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Phone Number *</label>
+                                    <input type="tel" class="form-control" name="momo_number" placeholder="+233 XX XXX XXXX">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="/terms/">Terms and Conditions</a> and <a href="/privacy/">Privacy Policy</a>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title">Order Summary</h5>
+                    
+                    <div class="order-items">
+                        {% for item in cart_items %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <div>
+                                <small>{{ item.product.name }}</small>
+                                <br>
+                                <small class="text-muted">Qty: {{ item.quantity }}</small>
+                            </div>
+                            <small>${{ item.total_price }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>${{ cart_total }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping</span>
+                        <span id="shippingCost">
+                            {% if cart_total > 50 %}FREE{% else %}$5.99{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax</span>
+                        <span>${{ cart_tax|floatformat:2 }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Discount</span>
+                        <span class="text-success">-${{ cart_discount|floatformat:2 }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-4">
+                        <strong>Total</strong>
+                        <strong class="h5 text-primary-custom" id="grandTotal">${{ cart_grand_total|floatformat:2 }}</strong>
+                    </div>
+                    
+                    <button class="btn btn-primary-custom btn-lg w-100" onclick="processPayment()">
+                        <i class="fas fa-lock me-2"></i>Place Order
+                    </button>
+                    
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-2"></i>Secure SSL Encryption
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Security Badges -->
+            <div class="card mt-3">
+                <div class="card-body text-center">
+                    <img src="https://img.shields.io/badge/PCI-DSS Compliant-green" alt="PCI Compliant" class="img-fluid mb-2">
+                    <br>
+                    <img src="https://img.shields.io/badge/256-bit Encryption-blue" alt="256-bit Encryption" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update shipping cost
+    document.querySelectorAll('input[name="shipping"]').forEach(radio => {
+        radio.addEventListener('change', updateTotals);
+    });
+    
+    function updateTotals() {
+        const shippingCost = document.querySelector('input[name="shipping"]:checked').value;
+        let shippingAmount = 0;
+        
+        if(shippingCost === 'express') {
+            shippingAmount = 12.99;
+        } else if(shippingCost === 'overnight') {
+            shippingAmount = 24.99;
+        } else if({{ cart_total }} <= 50) {
+            shippingAmount = 5.99;
+        }
+        
+        document.getElementById('shippingCost').textContent = shippingAmount === 0 ? 'FREE' : `$${shippingAmount.toFixed(2)}`;
+        
+        const subtotal = {{ cart_total }};
+        const tax = {{ cart_tax }};
+        const discount = {{ cart_discount }};
+        const grandTotal = subtotal + shippingAmount + tax - discount;
+        
+        document.getElementById('grandTotal').textContent = `$${grandTotal.toFixed(2)}`;
+    }
+    
+    // Payment processing
+    function processPayment() {
+        if(!document.getElementById('terms').checked) {
+            alert('Please accept the terms and conditions');
+            return;
+        }
+        
+        const form = document.getElementById('checkoutForm');
+        const formData = new FormData(form);
+        
+        // Show loading
+        const btn = document.querySelector('button[onclick="processPayment()"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        btn.disabled = true;
+        
+        fetch('/checkout/process/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                if(data.redirect_url) {
+                    // Redirect to payment gateway
+                    window.location.href = data.redirect_url;
+                } else if(data.order_id) {
+                    // Direct success
+                    window.location.href = `/order-success/${data.order_id}/`;
+                }
+            } else {
+                alert(data.message || 'Payment failed. Please try again.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+    
+    // Initialize
+    updateTotals();
+</script>
+{% endblock %}

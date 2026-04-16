@@ -1,0 +1,810 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}SMS Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-sms me-2"></i>SMS Logs
+            </h1>
+            <p class="text-muted mb-0">Monitor and manage SMS notifications</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_notification_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats - Updated with gradient styling -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-sms icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total SMS</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.total|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-paper-plane icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Sent</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.sent|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-check-circle icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Delivered</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.delivered|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-danger-gradient text-white me-3">
+                            <i class="fas fa-exclamation-triangle icon-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Failed</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.failed|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="">All Statuses</option>
+                        {% for status_value, status_label in status_choices %}
+                        <option value="{{ status_value }}" {% if filter_params.status == status_value %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Phone</label>
+                    <input type="text" name="to_phone" class="form-control" placeholder="Enter phone number..." 
+                           value="{{ filter_params.to_phone }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ filter_params.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ filter_params.date_to }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search by message, phone, or name..." 
+                           value="{{ filter_params.q }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'notifications:admin_sms_logs' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SMS Logs Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">SMS Logs</h6>
+            <span class="badge bg-primary">{{ sms_logs.paginator.count|default:sms_logs.count }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="smsLogsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>To</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Provider</th>
+                            <th>Sent</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sms in sms_logs %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ sms.to_phone }}</strong>
+                                    {% if sms.to_name %}
+                                    <br><small class="text-muted">{{ sms.to_name }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;">
+                                    {{ sms.message }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if sms.status == 'sent' %}
+                                <span class="badge bg-success">Sent</span>
+                                {% elif sms.status == 'delivered' %}
+                                <span class="badge bg-info">Delivered</span>
+                                {% elif sms.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ sms.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ sms.provider }}</span>
+                            </td>
+                            <td>
+                                {% if sms.sent_at %}
+                                <small class="text-muted" title="{{ sms.sent_at }}">
+                                    {{ sms.sent_at|timesince }} ago
+                                </small>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted" title="{{ sms.created_at }}">
+                                    {{ sms.created_at|timesince }} ago
+                                </small>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary sms-detail-btn" 
+                                        data-sms-id="{{ sms.id }}"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#smsDetailModal"
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <!-- Hidden JSON data for this SMS -->
+                                <script type="application/json" class="sms-data-{{ sms.id }}">
+{
+    "id": {{ sms.id }},
+    "toPhone": "{{ sms.to_phone|escapejs }}",
+    "toName": "{{ sms.to_name|default:''|escapejs }}",
+    "status": "{{ sms.status|escapejs }}",
+    "provider": "{{ sms.provider|escapejs }}",
+    "message": "{{ sms.message|escapejs }}",
+    "sentAt": "{{ sms.sent_at|date:'Y-m-d H:i:s'|default:'' }}",
+    "createdAt": "{{ sms.created_at|date:'Y-m-d H:i:s' }}",
+    "providerResponse": {% if sms.provider_response %}"{{ sms.provider_response|escapejs }}"{% else %}null{% endif %}
+}
+                                </script>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-sms fa-2x mb-3"></i>
+                                <p>No SMS logs found</p>
+                                {% if filter_params %}
+                                <a href="{% url 'notifications:admin_sms_logs' %}" class="btn btn-sm btn-outline-primary">
+                                    Clear Filters
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if sms_logs.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-3">
+                    {% if sms_logs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ sms_logs.previous_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in sms_logs.paginator.page_range %}
+                        {% if sms_logs.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > sms_logs.number|add:'-3' and i < sms_logs.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ i }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if sms_logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ sms_logs.next_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Single Reusable SMS Detail Modal -->
+<div class="modal fade" id="smsDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-sms me-2"></i>SMS Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Row 1: To Phone and To Name -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">To Phone</label>
+                        <p class="mb-0 fw-bold" id="modalToPhone">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">To Name</label>
+                        <p class="mb-0" id="modalToName">-</p>
+                    </div>
+                </div>
+
+                <!-- Row 2: Status and Provider -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Status</label>
+                        <p class="mb-0" id="modalStatus">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Provider</label>
+                        <p class="mb-0" id="modalProvider">-</p>
+                    </div>
+                </div>
+
+                <!-- Row 3: Created At and Sent At -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Created At</label>
+                        <p class="mb-0" id="modalCreatedAt">-</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Sent At</label>
+                        <p class="mb-0" id="modalSentAt">-</p>
+                    </div>
+                </div>
+
+                <!-- Message Content -->
+                <div class="mb-3">
+                    <label class="form-label text-muted small">Message Content</label>
+                    <div class="bg-light p-3 rounded border" style="max-height: 250px; overflow: auto; word-wrap: break-word; white-space: pre-wrap;">
+                        <p class="mb-0" id="modalMessage">-</p>
+                    </div>
+                </div>
+
+                <!-- Provider Response -->
+                <div class="mb-0" id="providerResponseContainer" style="display: none;">
+                    <label class="form-label text-muted small">Provider Response</label>
+                    <pre class="bg-dark text-light p-3 rounded" style="max-height: 200px; overflow: auto; border: 1px solid #666;"><code id="modalProviderResponse" class="text-light">-</code></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="smsRetryButton" style="display: none;">
+                    <i class="fas fa-redo me-1"></i>Retry
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Stat Cards - Gradient Style */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Icon size classes */
+    .icon-lg {
+        font-size: 1.5rem !important;
+        line-height: 1.5rem !important;
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-danger-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+
+    /* Text styling for cards only */
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Ensure Font Awesome icons display properly */
+    .fas {
+        display: inline-block;
+        font-style: normal;
+        font-variant: normal;
+        text-rendering: auto;
+        line-height: 1;
+    }
+
+    /* Table styling */
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+    }
+    
+    .table tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    .card-header {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    /* Modal styling */
+    .modal-content {
+        border: none;
+        border-radius: var(--radius-lg);
+    }
+    
+    .modal-header {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+        }
+        .icon-lg {
+            font-size: 1.25rem !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-xl-3 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 100px;
+        }
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        .icon-lg {
+            font-size: 1.125rem !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-xl-3 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            min-height: 40px;
+        }
+        .icon-lg {
+            font-size: 1rem !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const smsDetailModalEl = document.getElementById('smsDetailModal');
+    if (!smsDetailModalEl) {
+        console.error('SMS Detail Modal element not found');
+        return;
+    }
+    
+    let currentSmsId = null;
+    
+    // Listen for modal show event to populate data
+    smsDetailModalEl.addEventListener('show.bs.modal', function(e) {
+        const button = e.relatedTarget;
+        if (!button) {
+            console.warn('No button found as relatedTarget');
+            return;
+        }
+        
+        const smsId = button.getAttribute('data-sms-id');
+        if (!smsId) {
+            console.warn('No SMS ID found on button');
+            return;
+        }
+        
+        console.log('Loading SMS data for ID:', smsId);
+        currentSmsId = smsId;
+        
+        // Find the hidden JSON script tag with this SMS's data
+        const jsonScript = document.querySelector(`.sms-data-${smsId}`);
+        
+        if (!jsonScript) {
+            console.error('SMS data script not found for ID:', smsId);
+            alert('Could not load SMS data. Please try again.');
+            return;
+        }
+        
+        let smsData;
+        try {
+            const jsonText = jsonScript.textContent.trim();
+            console.log('Raw JSON:', jsonText.substring(0, 100));
+            smsData = JSON.parse(jsonText);
+            console.log('Parsed SMS Data:', smsData);
+        } catch (err) {
+            console.error('Failed to parse SMS data JSON:', err);
+            alert('Error parsing SMS data: ' + err.message);
+            return;
+        }
+        
+        // Populate modal with data
+        populateSmsModal(smsData);
+    });
+    
+    // Handle retry button
+    const retryBtn = document.getElementById('smsRetryButton');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (!currentSmsId) {
+                alert('No SMS selected for retry');
+                return;
+            }
+            
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Retrying...';
+            
+            // Call retry endpoint
+            fetch('/notifications/api/sms/' + currentSmsId + '/retry/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', `✓ ${data.message || 'SMS resent successfully!'}`);
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(smsDetailModalEl).hide();
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showAlert('danger', `✗ Error: ${data.error || 'Failed to retry SMS'}`);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Retry error:', error);
+                showAlert('danger', `✗ Network error: ${error.message}`);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        });
+    }
+    
+    function populateSmsModal(data) {
+        console.log('Populating modal with data:', data);
+        
+        // Update text fields
+        const toPhone = document.getElementById('modalToPhone');
+        const toName = document.getElementById('modalToName');
+        const createdAt = document.getElementById('modalCreatedAt');
+        const sentAt = document.getElementById('modalSentAt');
+        const message = document.getElementById('modalMessage');
+        const status = document.getElementById('modalStatus');
+        const provider = document.getElementById('modalProvider');
+        
+        if (toPhone) toPhone.textContent = data.toPhone || '-';
+        if (toName) toName.textContent = (data.toName && data.toName.trim()) ? data.toName : '-';
+        if (createdAt) createdAt.textContent = data.createdAt || '-';
+        if (sentAt) sentAt.textContent = (data.sentAt && data.sentAt.trim()) ? data.sentAt : 'Pending';
+        
+        // Update status badge
+        if (status) {
+            status.innerHTML = getStatusBadge(data.status);
+        }
+        
+        // Update provider badge
+        if (provider) {
+            provider.innerHTML = `<span class="badge bg-secondary">${escapeHtml(data.provider || 'Unknown')}</span>`;
+        }
+        
+        // Update message content
+        if (message) {
+            if (data.message && data.message.trim()) {
+                message.textContent = data.message;
+            } else {
+                message.innerHTML = '<em class="text-muted">No message content</em>';
+            }
+        }
+        
+        // Update provider response
+        const providerResponseContainer = document.getElementById('providerResponseContainer');
+        if (providerResponseContainer) {
+            if (data.providerResponse && data.providerResponse !== null && data.providerResponse !== 'null') {
+                const providerResponseElement = document.getElementById('modalProviderResponse');
+                
+                try {
+                    let responseText = data.providerResponse;
+                    
+                    // If it's a string, try to parse it as JSON
+                    if (typeof responseText === 'string') {
+                        try {
+                            // Try parsing it as JSON first
+                            const parsed = JSON.parse(responseText);
+                            responseText = JSON.stringify(parsed, null, 2);
+                        } catch (e) {
+                            // Not JSON, use as-is
+                            responseText = responseText;
+                        }
+                    } else if (typeof responseText === 'object') {
+                        responseText = JSON.stringify(responseText, null, 2);
+                    }
+                    
+                    providerResponseElement.textContent = responseText;
+                } catch (e) {
+                    console.error('Error processing provider response:', e);
+                    providerResponseElement.textContent = String(data.providerResponse || 'N/A');
+                }
+                providerResponseContainer.style.display = 'block';
+            } else {
+                providerResponseContainer.style.display = 'none';
+            }
+        }
+        
+        // Show/hide retry button
+        const retryButton = document.getElementById('smsRetryButton');
+        if (retryButton) {
+            retryButton.style.display = data.status === 'failed' ? 'block' : 'none';
+            retryButton.disabled = false;
+            retryButton.innerHTML = '<i class="fas fa-redo me-1"></i>Retry';
+        }
+    }
+    
+    function getStatusBadge(status) {
+        const badges = {
+            'sent': '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Sent</span>',
+            'delivered': '<span class="badge bg-info"><i class="fas fa-check-double me-1"></i>Delivered</span>',
+            'failed': '<span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>Failed</span>',
+            'pending': '<span class="badge bg-warning"><i class="fas fa-clock me-1"></i>Pending</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${escapeHtml(status)}</span>`;
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        const div = document.createElement('div');
+        div.textContent = unsafe;
+        return div.innerHTML;
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        // Create alert element
+        const alertHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Insert into DOM
+        const alertContainer = document.createElement('div');
+        alertContainer.innerHTML = alertHTML;
+        document.body.appendChild(alertContainer.firstElementChild);
+    }
+    
+    // Auto-refresh SMS status for pending messages
+    const pendingBadges = document.querySelectorAll('.badge.bg-warning');
+    if (pendingBadges.length > 0) {
+        setInterval(() => {
+            fetch('/notifications/api/sms/status-check/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.updated) {
+                        location.reload();
+                    }
+                })
+                .catch(error => console.error('Status check failed:', error));
+        }, 10000); // Check every 10 seconds
+    }
+});
+</script>
+{% endblock %}

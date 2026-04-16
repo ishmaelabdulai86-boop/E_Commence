@@ -1,0 +1,51 @@
+PAYMENT STATUS UPDATED
+======================
+
+Hi {{ customer_name }},
+
+Your payment status has been updated!
+
+PAYMENT STATUS CHANGE
+=====================
+{{ old_status|title }} → {{ new_status|title }}
+
+{% if new_status == 'paid' %}
+✓ Payment Received!
+Thank you! Your payment has been successfully processed and we're processing your order.
+{% elif new_status == 'failed' %}
+⚠ Payment Failed
+Your payment could not be processed. Please contact us or try again with a different payment method.
+{% endif %}
+
+PAYMENT DETAILS
+===============
+Order Number: {{ order.order_number }}
+Order Date: {{ order.created_at|date:"F d, Y" }}
+Payment Method: {{ order.payment_method|title }}
+Amount: ${{ order.total_amount|floatformat:2 }}
+Payment Status: {{ new_status|title }}
+
+ORDER SUMMARY
+=============
+Items: {{ order.items.count }}
+Subtotal: ${{ order.subtotal|floatformat:2 }}
+Shipping: ${{ order.shipping_cost|floatformat:2 }}
+Tax: ${{ order.tax_amount|floatformat:2 }}
+Total: ${{ order.total_amount|floatformat:2 }}
+
+{% if new_status == 'paid' %}
+WHAT'S NEXT?
+============
+✓ We're preparing your order for shipment
+✓ You'll receive a shipping notification with tracking info
+✓ Expected delivery: 3-7 business days
+{% endif %}
+
+NEED HELP?
+==========
+Questions about your payment? Contact our support team:
+📧 Email: support@techstore.com
+
+Thank you for shopping with TechStore!
+
+© {% now "Y" %} TechStore. All rights reserved.

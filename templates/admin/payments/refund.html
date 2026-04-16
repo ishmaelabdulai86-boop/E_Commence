@@ -1,0 +1,225 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Refund Payment - {{ payment.payment_id }} - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Process Refund</h1>
+            <p class="text-muted mb-0">Payment: {{ payment.payment_id }}</p>
+        </div>
+        <div>
+            <a href="{% url 'admin_payment_detail' payment.payment_id %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i> Cancel
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Refund Form Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Refund Details</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Payment Summary -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading">Payment Summary</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Original Amount:</small>
+                                <div class="h5">${{ payment.amount|floatformat:2 }} {{ payment.currency }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Already Refunded:</small>
+                                <div class="h5">
+                                    {% with total_refunded=payment.refunds.filter.status='completed'|sum:'amount' %}
+                                    ${{ total_refunded|default:0|floatformat:2 }}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Maximum Refundable:</small>
+                            <div class="h5 text-success">${{ max_refund_amount|floatformat:2 }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Refund Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Refund Amount *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="amount" 
+                                       name="amount"
+                                       value="{{ max_refund_amount|floatformat:2 }}"
+                                       min="0.01"
+                                       max="{{ max_refund_amount|floatformat:2 }}"
+                                       step="0.01"
+                                       required>
+                                <span class="input-group-text">{{ payment.currency }}</span>
+                            </div>
+                            <div class="form-text">
+                                Enter amount between $0.01 and ${{ max_refund_amount|floatformat:2 }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Refund Reason *</label>
+                            <select class="form-control" id="reason" name="reason" required>
+                                <option value="requested_by_customer">Requested by Customer</option>
+                                <option value="duplicate">Duplicate Transaction</option>
+                                <option value="fraudulent">Fraudulent</option>
+                                <option value="product_return">Product Return</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="3"
+                                      placeholder="Add any notes about this refund..."></textarea>
+                        </div>
+
+                        <!-- Gateway Info -->
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Refund Processing
+                            </h6>
+                            <p class="mb-1">
+                                <strong>Payment Gateway:</strong> {{ payment.payment_gateway|title }}
+                            </p>
+                            <p class="mb-0 small">
+                                {% if payment.payment_gateway in 'stripe,paystack' %}
+                                This refund will be processed automatically through the gateway.
+                                {% else %}
+                                This refund will require manual processing.
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'admin_payment_detail' payment.payment_id %}" 
+                               class="btn btn-secondary me-2">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-undo me-2"></i> Process Refund
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Previous Refunds -->
+            {% if payment.refunds.exists %}
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Previous Refunds</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Refund ID</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for refund in payment.refunds.all %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'admin_refund_detail' refund.id %}" 
+                                           class="text-decoration-none">
+                                            {{ refund.refund_id|truncatechars:10 }}
+                                        </a>
+                                    </td>
+                                    <td>${{ refund.amount|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if refund.status == 'completed' %}success
+                                                       {% elif refund.status == 'pending' %}warning
+                                                       {% elif refund.status == 'failed' %}danger
+                                                       {% else %}info{% endif %}">
+                                            {{ refund.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ refund.requested_at|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const amountInput = document.getElementById('amount');
+        const maxAmount = parseFloat('{{ max_refund_amount|floatformat:2 }}');
+        
+        // Validate amount on input
+        amountInput.addEventListener('change', function() {
+            let value = parseFloat(this.value);
+            
+            if (isNaN(value) || value <= 0) {
+                this.value = '0.01';
+                this.classList.add('is-invalid');
+            } else if (value > maxAmount) {
+                this.value = maxAmount.toFixed(2);
+                this.classList.add('is-invalid');
+                alert(`Refund amount cannot exceed $${maxAmount.toFixed(2)}`);
+            } else {
+                this.classList.remove('is-invalid');
+                this.value = value.toFixed(2);
+            }
+        });
+        
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const amount = parseFloat(amountInput.value);
+            
+            if (amount <= 0) {
+                e.preventDefault();
+                alert('Please enter a valid refund amount.');
+                amountInput.focus();
+                return false;
+            }
+            
+            if (amount > maxAmount) {
+                e.preventDefault();
+                alert(`Refund amount cannot exceed $${maxAmount.toFixed(2)}`);
+                amountInput.focus();
+                return false;
+            }
+            
+            if (!confirm(`Are you sure you want to refund $${amount.toFixed(2)}?\n\nThis action cannot be undone.`)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+{% endblock %}

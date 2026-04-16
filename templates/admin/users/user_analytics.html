@@ -1,0 +1,805 @@
+{% extends 'admin/admin_base.html' %}
+{% load static %}
+
+{% block title %}User Analytics - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-2">User Analytics</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'analytics:analytics_dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">User Analytics</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-calendar me-2"></i>
+                            {% if period == 'day' %}Last 24 Hours
+                            {% elif period == 'week' %}Last 4 Weeks
+                            {% elif period == 'month' %}Last 3 Months
+                            {% else %}Last Year{% endif %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item {% if period == 'day' %}active{% endif %}" 
+                                   href="?period=day">
+                                    Last 24 Hours
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if period == 'week' %}active{% endif %}" 
+                                   href="?period=week">
+                                    Last 4 Weeks
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if period == 'month' %}active{% endif %}" 
+                                   href="?period=month">
+                                    Last 3 Months
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item {% if period == 'year' %}active{% endif %}" 
+                                   href="?period=year">
+                                    Last Year
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <a href="{% url 'users:admin_user_list' %}" class="btn btn-primary">
+                        <i class="fas fa-users me-2"></i>Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Users</h6>
+                            <h3 class="mb-0">{{ total_users }}</h3>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-success">
+                            <i class="fas fa-arrow-up me-1"></i>
+                            {{ new_users_today }} new today
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Active Users</h6>
+                            <h3 class="mb-0">{{ active_users }}</h3>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">
+                            {{ active_users|floatformat:0 }}% of total
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Verified Users</h6>
+                            <h3 class="mb-0">{{ verified_users }}</h3>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">
+                            {{ verified_users|floatformat:0 }}% of total
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Avg. Retention</h6>
+                            <h3 class="mb-0">87%</h3>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-success">
+                            <i class="fas fa-arrow-up me-1"></i>
+                            2.5% from last month
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <!-- User Registration Chart -->
+        <div class="col-xl-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>User Registration Trend
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
+                            <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
+                            <li><a class="dropdown-item" href="#">Last 90 Days</a></li>
+                            <li><a class="dropdown-item" href="#">Last Year</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Chart will go here - using Chart.js for example -->
+                    <div class="chart-container" style="height: 300px; position: relative;">
+                        <canvas id="registrationChart"></canvas>
+                    </div>
+                    
+                    <!-- Data Table -->
+                    <div class="table-responsive mt-4">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>New Users</th>
+                                    <th>Growth</th>
+                                    <th>Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reg in registrations %}
+                                <tr>
+                                    <td>{{ reg.period|date:"M d, Y" }}</td>
+                                    <td><strong>{{ reg.count }}</strong></td>
+                                    <td>
+                                        {% if forloop.counter0 > 0 %}
+                                        {% with prev=registrations|slice:forloop.counter0|last %}
+                                        <span class="text-{% if reg.count > prev.count %}success{% else %}danger{% endif %}">
+                                            <i class="fas fa-arrow-{% if reg.count > prev.count %}up{% else %}down{% endif %} me-1"></i>
+                                            {{ reg.count|add:prev.count|stringformat:"d" }}%
+                                        </span>
+                                        {% endwith %}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if forloop.counter == 1 %}
+                                        {{ reg.count }}
+                                        {% else %}
+                                        {% with total=0 %}
+                                        {% for r in registrations|slice:":forloop.counter" %}
+                                        {% with total=total|add:r.count %}
+                                        {{ total }}
+                                        {% endwith %}
+                                        {% endfor %}
+                                        {% endwith %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3 text-muted">
+                                        No registration data available
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Role Distribution -->
+        <div class="col-xl-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2 text-success"></i>User Role Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Donut Chart -->
+                    <div class="chart-container" style="height: 250px; position: relative;">
+                        <canvas id="roleDistributionChart"></canvas>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="row text-center mt-4">
+                        <div class="col-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-2">
+                                    <h4 class="mb-0 text-primary">{{ total_users }}</h4>
+                                    <small class="text-muted">Total</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-2">
+                                    <h4 class="mb-0 text-success">{{ active_users }}</h4>
+                                    <small class="text-muted">Active</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Customers & Geographic Data -->
+    <div class="row mb-4">
+        <div class="col-xl-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-crown me-2 text-warning"></i>Top Customers by Spending
+                    </h5>
+                    <a href="{% url 'users:admin_user_list' %}?role=customer" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Orders</th>
+                                    <th>Total Spent</th>
+                                    <th>Avg. Order</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in top_customers %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if customer.user.profile_picture_url %}
+                                            <img src="{{ customer.user.profile_picture_url }}" 
+                                                 alt="{{ customer.user.username }}" 
+                                                 class="rounded-circle me-2" width="32" height="32">
+                                            {% else %}
+                                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-2" 
+                                                 style="width: 32px; height: 32px;">
+                                                <i class="fas fa-user text-primary fa-sm"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-semibold">{{ customer.user.get_full_name|default:customer.user.username }}</div>
+                                                <small class="text-muted">{{ customer.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary rounded-pill">
+                                            {{ customer.order_count }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">${{ customer.total_spent|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            ${{ customer.avg_order_value|floatformat:2 }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if customer.user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-users fa-2x mb-3"></i>
+                                            <p>No customer data available</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Geographic Distribution - FIXED SECTION -->
+        <div class="col-xl-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-globe-americas me-2 text-info"></i>Geographic Distribution
+                    </h5>
+                    <a href="#" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-download me-1"></i>Export
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- ... map code ... -->
+                    
+                    <!-- Location Table - FIXED -->
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Country</th>
+                                    <th>Users</th>
+                                    <th>% of Total</th>
+                                    <th>Growth</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for location in location_stats %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-flag me-2 text-muted"></i>
+                                            {{ location.country|default:"Unknown" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ location.count }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            {% widthratio location.count total_users 100 as percentage %}
+                                            <div class="progress-bar bg-{% cycle 'primary' 'success' 'warning' 'info' 'danger' %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ percentage }}%">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ percentage|floatformat:1 }}%
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="text-success">
+                                            <i class="fas fa-arrow-up me-1"></i>
+                                            5.2%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-3 text-muted">
+                                        No geographic data available
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Behavior Metrics -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2 text-purple"></i>User Behavior Metrics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Activity Metrics -->
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="metric-card p-3 border rounded-3">
+                                <div class="metric-icon mb-3">
+                                    <i class="fas fa-sign-in-alt fa-2x text-primary"></i>
+                                </div>
+                                <h3 class="metric-value">24.5k</h3>
+                                <p class="metric-label text-muted mb-0">Monthly Logins</p>
+                                <div class="metric-change text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>12.3%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="metric-card p-3 border rounded-3">
+                                <div class="metric-icon mb-3">
+                                    <i class="fas fa-shopping-cart fa-2x text-success"></i>
+                                </div>
+                                <h3 class="metric-value">3.2</h3>
+                                <p class="metric-label text-muted mb-0">Avg. Cart Value</p>
+                                <div class="metric-change text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>5.7%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="metric-card p-3 border rounded-3">
+                                <div class="metric-icon mb-3">
+                                    <i class="fas fa-clock fa-2x text-warning"></i>
+                                </div>
+                                <h3 class="metric-value">8.2m</h3>
+                                <p class="metric-label text-muted mb-0">Avg. Session Time</p>
+                                <div class="metric-change text-danger">
+                                    <i class="fas fa-arrow-down me-1"></i>2.1%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 text-center mb-4">
+                            <div class="metric-card p-3 border rounded-3">
+                                <div class="metric-icon mb-3">
+                                    <i class="fas fa-redo fa-2x text-info"></i>
+                                </div>
+                                <h3 class="metric-value">68%</h3>
+                                <p class="metric-label text-muted mb-0">Return Rate</p>
+                                <div class="metric-change text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>3.4%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Retention Chart -->
+                    <div class="mt-4">
+                        <h6 class="mb-3">User Retention Over Time</h6>
+                        <div class="retention-chart" style="height: 200px; position: relative;">
+                            <!-- Retention chart placeholder -->
+                            <div class="d-flex align-items-center justify-content-center h-100 bg-light rounded-3">
+                                <i class="fas fa-chart-area fa-2x text-muted me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">Retention Analytics</h6>
+                                    <p class="text-muted small mb-0">User retention and churn analysis</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Registration Chart
+        const regCtx = document.getElementById('registrationChart');
+        if (regCtx) {
+            try {
+                const registrationLabels = [
+                    {% for reg in registrations %}
+                    '{{ reg.period|date:"M d" }}',
+                    {% endfor %}
+                ];
+                
+                const registrationData = [
+                    {% for reg in registrations %}
+                    {{ reg.count }},
+                    {% endfor %}
+                ];
+                
+                // Check if we have data
+                if (registrationLabels.length === 0 || registrationData.length === 0) {
+                    console.warn('No registration data available for chart');
+                    regCtx.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100"><p class="text-muted">No registration data available</p></div>';
+                } else {
+                    const ctx = regCtx.getContext('2d');
+                    const registrationChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: registrationLabels,
+                            datasets: [{
+                                label: 'New Users',
+                                data: registrationData,
+                                borderColor: '#6366f1',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointBackgroundColor: '#6366f1',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointHoverRadius: 7
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    titleFont: { size: 14, weight: 'bold' },
+                                    bodyFont: { size: 12 },
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Users: ' + context.parsed.y;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: { size: 12 }
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: { size: 12 }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error initializing registration chart:', error);
+                regCtx.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100"><p class="text-danger">Error loading chart</p></div>';
+            }
+        }
+        
+        // Role Distribution Chart
+        const roleCtx = document.getElementById('roleDistributionChart');
+        if (roleCtx) {
+            try {
+                const roleLabels = [
+                    {% for role in role_distribution %}
+                    '{{ role.get_role_display|default:role.role|title }}',
+                    {% endfor %}
+                ];
+                
+                const roleData = [
+                    {% for role in role_distribution %}
+                    {{ role.count }},
+                    {% endfor %}
+                ];
+                
+                if (roleLabels.length === 0 || roleData.length === 0) {
+                    console.warn('No role distribution data available');
+                    roleCtx.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100"><p class="text-muted">No role data available</p></div>';
+                } else {
+                    const ctx = roleCtx.getContext('2d');
+                    const roleDistributionChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: roleLabels,
+                            datasets: [{
+                                data: roleData,
+                                backgroundColor: [
+                                    '#3b82f6', // Customer - blue
+                                    '#f59e0b', // Seller - amber
+                                    '#ef4444', // Admin - red
+                                    '#6b7280'  // Others - gray
+                                ],
+                                borderWidth: 0,
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    labels: {
+                                        font: { size: 12 },
+                                        padding: 15,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error initializing role distribution chart:', error);
+                roleCtx.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100"><p class="text-danger">Error loading chart</p></div>';
+            }
+        }
+        
+        // Map Marker Animation
+        const mapMarkers = document.querySelectorAll('.map-marker');
+        mapMarkers.forEach(marker => {
+            marker.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.2)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            marker.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+        
+        // Metric Cards Animation
+        const metricCards = document.querySelectorAll('.metric-card');
+        metricCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.1)';
+                this.style.transition = 'all 0.3s ease';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        });
+        
+        // Period Filter Dropdown
+        const periodDropdown = document.querySelector('.dropdown-toggle');
+        if (periodDropdown) {
+            periodDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+    });
+</script>
+
+<style>
+    .stat-card {
+        border-left: 4px solid;
+        border-left-color: var(--primary-color);
+    }
+    
+    .stat-card:nth-child(2) {
+        border-left-color: var(--success-color);
+    }
+    
+    .stat-card:nth-child(3) {
+        border-left-color: var(--warning-color);
+    }
+    
+    .stat-card:nth-child(4) {
+        border-left-color: var(--info-color);
+    }
+    
+    .map-marker {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .metric-card {
+        transition: all 0.3s ease;
+    }
+    
+    .metric-value {
+        font-weight: 700;
+        font-size: 2rem;
+        margin: 0.5rem 0;
+        background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .metric-change {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .role-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        display: inline-block;
+    }
+    
+    .progress {
+        height: 6px;
+        border-radius: 3px;
+        margin-top: 4px;
+    }
+    
+    .progress-bar {
+        border-radius: 3px;
+    }
+    
+    .retention-chart {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .text-purple {
+        color: #8b5cf6;
+    }
+</style>
+{% endblock %}

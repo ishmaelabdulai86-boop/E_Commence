@@ -1,0 +1,812 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Email Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-envelope me-2"></i>Email Logs
+            </h1>
+            <p class="text-muted mb-0">Monitor and manage email notifications</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_notification_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards - Updated with gradient styling -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-envelope fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Emails</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.total|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-paper-plane fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Sent</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.sent|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Delivered</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.delivered|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-danger-gradient text-white me-3">
+                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Failed</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.failed|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Stats Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-ban fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Bounced</h6>
+                            <h3 class="mb-0 fw-bold">
+                                {% with bounced_count=email_logs.filter|default:email_logs|length %}
+                                {{ bounced_count|intcomma }}
+                                {% endwith %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-secondary-gradient text-white me-3">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0 fw-bold">
+                                {% with pending_count=email_logs.filter|default:email_logs|length %}
+                                {{ pending_count|intcomma }}
+                                {% endwith %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-purple-gradient text-white me-3">
+                            <i class="fas fa-history fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Today</h6>
+                            <h3 class="mb-0 fw-bold">
+                                {% now "j" as today %}
+                                {{ today }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-teal-gradient text-white me-3">
+                            <i class="fas fa-chart-line fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Avg/Day</h6>
+                            <h3 class="mb-0 fw-bold">
+                                {% widthratio stats.total 30 1|floatformat:0 as avg %}
+                                {{ avg|default:"0" }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="">All Statuses</option>
+                        {% for status_value, status_label in status_choices %}
+                        <option value="{{ status_value }}" {% if filter_params.status == status_value %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Email</label>
+                    <input type="text" name="to_email" class="form-control" placeholder="Enter email..." 
+                           value="{{ filter_params.to_email }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ filter_params.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ filter_params.date_to }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search by subject, email, or name..." 
+                           value="{{ filter_params.q }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'notifications:admin_email_logs' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email Logs Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Email Logs</h6>
+            <span class="badge bg-primary">{{ email_logs.paginator.count|default:email_logs.count }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="emailLogsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>To</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Provider</th>
+                            <th>Sent</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for email in email_logs %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ email.to_email }}</strong>
+                                    {% if email.to_name %}
+                                    <br><small class="text-muted">{{ email.to_name }}</small>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;">
+                                    {{ email.subject }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if email.status == 'sent' %}
+                                <span class="badge bg-success">
+                                    Sent
+                                </span>
+                                {% elif email.status == 'delivered' %}
+                                <span class="badge bg-info">
+                                    Delivered
+                                </span>
+                                {% elif email.status == 'bounced' %}
+                                <span class="badge bg-warning">
+                                    Bounced
+                                </span>
+                                {% elif email.status == 'failed' %}
+                                <span class="badge bg-danger">
+                                    Failed
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ email.status }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ email.provider }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if email.sent_at %}
+                                <small class="text-muted" title="{{ email.sent_at }}">
+                                    {{ email.sent_at|timesince }} ago
+                                </small>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    Pending
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted" title="{{ email.created_at }}">
+                                    {{ email.created_at|timesince }} ago
+                                </small>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary email-detail-btn" 
+                                        data-email-id="{{ email.id }}"
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <!-- Hidden JSON data for this email -->
+                                <script type="application/json" class="email-data-{{ email.id }}">
+                                {
+                                    "id": {{ email.id }},
+                                    "toEmail": "{{ email.to_email|escapejs }}",
+                                    "toName": "{{ email.to_name|default:''|escapejs }}",
+                                    "subject": "{{ email.subject|escapejs }}",
+                                    "status": "{{ email.status|escapejs }}",
+                                    "provider": "{{ email.provider|escapejs }}",
+                                    "htmlContent": "{{ email.html_content|escapejs }}",
+                                    "providerResponse": "{{ email.provider_response|escapejs }}"
+                                }
+                                </script>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="fas fa-envelope fa-2x mb-3"></i>
+                                <p>No email logs found</p>
+                                {% if filter_params %}
+                                <a href="{% url 'notifications:admin_email_logs' %}" class="btn btn-sm btn-outline-primary">
+                                    Clear Filters
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if email_logs.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-3">
+                    {% if email_logs.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ email_logs.previous_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in email_logs.paginator.page_range %}
+                        {% if email_logs.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > email_logs.number|add:'-3' and i < email_logs.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ i }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if email_logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ email_logs.next_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Single Reusable Email Detail Modal -->
+<div class="modal fade" id="emailDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-envelope me-2"></i>Email Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">To Email</label>
+                        <p class="mb-0" id="modalToEmail"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">To Name</label>
+                        <p class="mb-0" id="modalToName"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Subject</label>
+                        <p class="mb-0" id="modalSubject"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Status</label>
+                        <p class="mb-0" id="modalStatus"></p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Provider</label>
+                        <p class="mb-0">
+                            <span class="badge" id="modalProvider"></span>
+                        </p>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">HTML Content Preview</label>
+                    <div class="border rounded p-3 bg-light" style="max-height: 250px; overflow: auto;">
+                        <div id="modalHtmlContent"></div>
+                    </div>
+                </div>
+                <div class="mb-3" id="providerResponseContainer" style="display: none;">
+                    <label class="form-label text-muted">Provider Response</label>
+                    <pre class="bg-dark text-light p-3" style="max-height: 200px; overflow: auto;">
+                        <code id="modalProviderResponse"></code>
+                    </pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="retryButton" style="display: none;">Retry</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emailDetailModal = new bootstrap.Modal(document.getElementById('emailDetailModal'));
+    let currentEmailId = null;  // Store current email ID for retry
+    
+    // Handle eye button clicks
+    document.querySelectorAll('.email-detail-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const emailId = this.dataset.emailId;
+            currentEmailId = emailId;  // Store for retry button
+            
+            // Find the hidden JSON script tag with this email's data
+            const jsonScript = document.querySelector(`.email-data-${emailId}`);
+            
+            if (!jsonScript) {
+                console.error('Email data not found for ID:', emailId);
+                alert('Could not load email data');
+                return;
+            }
+            
+            let emailData;
+            try {
+                emailData = JSON.parse(jsonScript.textContent);
+            } catch (e) {
+                console.error('Failed to parse email data JSON:', e);
+                alert('Failed to parse email data');
+                return;
+            }
+            
+            // Populate modal
+            populateEmailModal(emailData);
+            
+            // Show modal
+            emailDetailModal.show();
+        });
+    });
+    
+    // Handle retry button
+    document.getElementById('retryButton').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (!currentEmailId) {
+            alert('No email selected for retry');
+            return;
+        }
+        
+        const retryBtn = this;
+        const originalText = retryBtn.innerHTML;
+        
+        // Show loading state
+        retryBtn.disabled = true;
+        retryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Retrying...';
+        
+        // Call retry endpoint
+        fetch('{% url "notifications:api_retry_email" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                email_id: currentEmailId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert('success', `✓ ${data.message}`);
+                
+                // Close modal after brief delay
+                setTimeout(() => {
+                    emailDetailModal.hide();
+                    // Optionally reload the page to show updated status
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', `✗ Error: ${data.error || 'Failed to retry email'}`);
+                
+                // Reset button
+                retryBtn.disabled = false;
+                retryBtn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Retry error:', error);
+            showAlert('danger', `✗ Network error: ${error.message}`);
+            
+            // Reset button
+            retryBtn.disabled = false;
+            retryBtn.innerHTML = originalText;
+        });
+    });
+    
+    function populateEmailModal(data) {
+        // Update text fields
+        document.getElementById('modalToEmail').textContent = data.toEmail;
+        document.getElementById('modalToName').textContent = data.toName || 'N/A';
+        document.getElementById('modalSubject').textContent = data.subject;
+        
+        // Update status badge
+        const statusElement = document.getElementById('modalStatus');
+        statusElement.innerHTML = getStatusBadge(data.status);
+        
+        // Update provider badge
+        const providerElement = document.getElementById('modalProvider');
+        providerElement.textContent = data.provider;
+        providerElement.className = 'badge bg-secondary';
+        
+        // Update HTML content preview
+        const htmlContainer = document.getElementById('modalHtmlContent');
+        if (data.htmlContent && data.htmlContent.trim()) {
+            try {
+                htmlContainer.innerHTML = data.htmlContent;
+            } catch (e) {
+                htmlContainer.innerHTML = '<p class="text-danger">Could not display HTML content</p>';
+            }
+        } else {
+            htmlContainer.innerHTML = '<p class="text-muted">No content available</p>';
+        }
+        
+        // Update provider response
+        const providerResponseContainer = document.getElementById('providerResponseContainer');
+        if (data.providerResponse && data.providerResponse.trim()) {
+            const providerResponseElement = document.getElementById('modalProviderResponse');
+            
+            try {
+                // Try to parse as JSON first
+                const parsed = JSON.parse(data.providerResponse);
+                providerResponseElement.textContent = JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                // Not valid JSON, display as-is
+                providerResponseElement.textContent = data.providerResponse;
+            }
+            providerResponseContainer.style.display = 'block';
+        } else {
+            providerResponseContainer.style.display = 'none';
+        }
+        
+        // Show/hide retry button
+        const retryButton = document.getElementById('retryButton');
+        retryButton.style.display = data.status === 'failed' ? 'block' : 'none';
+        retryButton.disabled = false;  // Reset button state
+        retryButton.innerHTML = 'Retry';  // Reset button text
+    }
+    
+    function getStatusBadge(status) {
+        const badges = {
+            'sent': '<span class="badge bg-success">Sent</span>',
+            'delivered': '<span class="badge bg-info">Delivered</span>',
+            'bounced': '<span class="badge bg-warning">Bounced</span>',
+            'failed': '<span class="badge bg-danger">Failed</span>',
+            'pending': '<span class="badge bg-secondary">Pending</span>'
+        };
+        return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Helper function to show alerts
+    function showAlert(type, message) {
+        // Create alert element
+        const alertHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Insert into DOM
+        const alertContainer = document.createElement('div');
+        alertContainer.innerHTML = alertHTML;
+        document.body.appendChild(alertContainer.firstElementChild);
+    }
+});
+</script>
+
+<style>
+    /* Modern Stat Cards - Gradient Style */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-danger-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+    
+    .bg-secondary-gradient {
+        background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%) !important;
+    }
+    
+    .bg-purple-gradient {
+        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+    }
+    
+    .bg-teal-gradient {
+        background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+    .stat-card:nth-child(5)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stat-card:nth-child(6)::before { background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%); }
+    .stat-card:nth-child(7)::before { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+    .stat-card:nth-child(8)::before { background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%); }
+
+    /* Text styling for cards only */
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-xl-3 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 100px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-xl-3 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+    }
+
+    /* Table styling */
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+    }
+    
+    .card-header {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Notifications - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-bell me-2"></i>All Notifications
+            </h1>
+            <p class="text-muted mb-0">Manage and monitor all system notifications</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_notification_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+            </a>
+            <a href="{% url 'notifications:admin_send_bulk_notification' %}" class="btn btn-primary ms-2">
+                <i class="fas fa-paper-plane me-1"></i>Bulk Send
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for type_value, type_label in notification_types %}
+                        <option value="{{ type_value }}" {% if filter_params.type == type_value %}selected{% endif %}>
+                            {{ type_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for status_value, status_label in status_choices %}
+                        <option value="{{ status_value }}" {% if filter_params.status == status_value %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date From</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ filter_params.date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date To</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ filter_params.date_to }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search by title, message, or user..." 
+                           value="{{ filter_params.q }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'notifications:admin_notification_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-info-circle me-2"></i>
+                        Showing {{ notifications|length }} of {{ total_count|intcomma }} notifications
+                    </div>
+                    {% if filter_params %}
+                    <div class="text-muted">
+                        Filters applied
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for notification in notifications %}
+                        <tr>
+                            <td>
+                                <code class="text-xs">{{ notification.notification_id|truncatechars:10 }}</code>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        <div class="avatar-title bg-light rounded">
+                                            {{ notification.user.username|first|upper }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ notification.user.username }}</h6>
+                                        <small class="text-muted">{{ notification.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if notification.notification_type == 'email' %}info{% elif notification.notification_type == 'sms' %}success{% elif notification.notification_type == 'push' %}warning{% else %}secondary{% endif %}">
+                                    {{ notification.get_notification_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 200px;">
+                                    {{ notification.title }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if notification.status == 'sent' %}
+                                <span class="badge bg-success">Sent</span>
+                                {% elif notification.status == 'delivered' %}
+                                <span class="badge bg-info">Delivered</span>
+                                {% elif notification.status == 'read' %}
+                                <span class="badge bg-primary">Read</span>
+                                {% elif notification.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ notification.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted" title="{{ notification.created_at }}">
+                                    {{ notification.created_at|timesince }} ago
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'notifications:admin_notification_detail' notification.notification_id %}" 
+                                       class="btn btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if notification.status == 'failed' %}
+                                    <button class="btn btn-outline-warning" title="Retry" disabled>
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No notifications found</p>
+                                {% if filter_params %}
+                                <a href="{% url 'notifications:admin_notification_list' %}" class="btn btn-sm btn-outline-primary">
+                                    Clear Filters
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if notifications.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if notifications.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notifications.previous_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in notifications.paginator.page_range %}
+                        {% if notifications.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > notifications.number|add:'-3' and i < notifications.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ i }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if notifications.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ notifications.next_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

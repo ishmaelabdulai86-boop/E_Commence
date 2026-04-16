@@ -1,0 +1,1157 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Notification Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-bell me-2"></i>Notification Dashboard
+            </h1>
+            <p class="text-muted mb-0">Overview of notification system performance</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_notification_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>All Notifications
+            </a>
+            <a href="{% url 'notifications:admin_send_bulk_notification' %}" class="btn btn-primary ms-2">
+                <i class="fas fa-paper-plane me-1"></i>Send Bulk
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards - Updated with gradient styling -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-bell fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Notifications</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.total_notifications|intcomma }}</h3>
+                            <div class="mt-2">
+                                <small class="text-success">
+                                    <i class="fas fa-arrow-up me-1"></i>
+                                    {{ stats.sent_today }} sent today
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-envelope fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Unread</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.unread_notifications|intcomma }}</h3>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    {% widthratio stats.unread_notifications stats.total_notifications 100 as unread_pct %}
+                                    {{ unread_pct|default:0 }}% of total
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-danger-gradient text-white me-3">
+                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Failed</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.failed_notifications|intcomma }}</h3>
+                            <div class="mt-2">
+                                <small class="text-danger">
+                                    {% widthratio stats.failed_notifications stats.total_notifications 100 as fail_rate %}
+                                    {{ fail_rate|default:0 }}% failure rate
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-users fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Active Users</h6>
+                            <h3 class="mb-0 fw-bold">{{ stats.total_users_with_notifications|intcomma }}</h3>
+                            <div class="mt-2">
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Active notification users
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status Section -->
+    <div class="row mb-4">
+        <!-- SMS Provider Status -->
+        <div class="col-xl-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-mobile-alt me-2"></i>SMS Provider Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if sms_provider_status.enabled %}
+                        <div class="alert alert-success mb-3" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Live</strong> - Twilio SMS Enabled
+                        </div>
+                        <div class="info-item mb-2">
+                            <small class="text-muted d-block">Provider</small>
+                            <strong>{{ sms_provider_status.provider }}</strong>
+                        </div>
+                        <div class="info-item mb-2">
+                            <small class="text-muted d-block">Phone Number</small>
+                            <strong class="font-monospace">{{ sms_provider_status.phone_number }}</strong>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mb-3" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Development Mode</strong> - SMS Simulated
+                        </div>
+                        <p class="text-muted small mb-3">
+                            Twilio credentials not configured. SMS messages are being simulated locally.
+                        </p>
+                        <div class="info-item mb-2">
+                            <small class="text-muted d-block">Provider</small>
+                            <strong>{{ sms_provider_status.provider }}</strong>
+                        </div>
+                    {% endif %}
+                    <div class="mt-3 pt-3 border-top">
+                        <a href="{% url 'notifications:admin_sms_logs' %}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-list me-1"></i>View SMS Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Configuration Status -->
+        <div class="col-xl-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-envelope me-2"></i>Email Configuration
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success mb-3" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Active</strong> - Email Enabled
+                    </div>
+                    <div class="info-item mb-2">
+                        <small class="text-muted d-block">Email Backend</small>
+                        <strong>Gmail SMTP</strong>
+                    </div>
+                    <div class="info-item mb-2">
+                        <small class="text-muted d-block">From Email</small>
+                        <strong class="font-monospace text-truncate">ishmaelabdulai86@gmail.com</strong>
+                    </div>
+                    <div class="info-item mb-2">
+                        <small class="text-muted d-block">Server</small>
+                        <strong class="font-monospace">smtp.gmail.com:587</strong>
+                    </div>
+                    <div class="mt-3 pt-3 border-top">
+                        <a href="{% url 'notifications:admin_email_logs' %}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-list me-1"></i>View Email Logs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-xl-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-lightning fa-lg me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'notifications:admin_send_bulk_notification' %}" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i>Send Bulk Notification
+                        </a>
+                        <a href="{% url 'notifications:admin_template_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-file-alt me-1"></i>Manage Templates
+                        </a>
+                        <a href="{% url 'notifications:admin_test_notification' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-flask me-1"></i>Test Notification
+                        </a>
+                        <a href="{% url 'notifications:admin_preferences_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-sliders-h me-1"></i>User Preferences
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <!-- Notification Trends Chart -->
+        <div class="col-xl-8 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Notification Trends (Last 30 Days)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="notificationTrendsChart" style="height: 320px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Type Distribution -->
+        <div class="col-xl-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie me-2"></i>By Type
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="notificationTypeChart" style="height: 320px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown by Type and Category -->
+    <div class="row mb-4">
+        <!-- Type Breakdown -->
+        {% if notification_by_type %}
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-layer-group me-2"></i>Breakdown by Type
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for item in notification_by_type %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <div class="d-flex align-items-center">
+                                {% if item.notification_type == 'email' %}
+                                    <i class="fas fa-envelope fa-lg text-info me-3"></i>
+                                    <span class="fw-500">Email</span>
+                                {% elif item.notification_type == 'sms' %}
+                                    <i class="fas fa-mobile-alt fa-lg text-success me-3"></i>
+                                    <span class="fw-500">SMS</span>
+                                {% elif item.notification_type == 'push' %}
+                                    <i class="fas fa-bell fa-lg text-warning me-3"></i>
+                                    <span class="fw-500">Push</span>
+                                {% elif item.notification_type == 'in_app' %}
+                                    <i class="fas fa-inbox fa-lg text-primary me-3"></i>
+                                    <span class="fw-500">In-App</span>
+                                {% elif item.notification_type == 'whatsapp' %}
+                                    <i class="fab fa-whatsapp fa-lg text-success me-3"></i>
+                                    <span class="fw-500">WhatsApp</span>
+                                {% else %}
+                                    <i class="fas fa-circle fa-lg text-muted me-3"></i>
+                                    <span class="fw-500 text-capitalize">{{ item.notification_type }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="badge bg-primary rounded-pill px-3 py-2">{{ item.count|intcomma }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Category Breakdown -->
+        {% if notification_by_category %}
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-header py-3 border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tags me-2"></i>Breakdown by Category
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for item in notification_by_category %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                            <div class="d-flex align-items-center">
+                                {% if item.template__category == 'order' %}
+                                    <i class="fas fa-shopping-cart fa-lg text-success me-3"></i>
+                                {% elif item.template__category == 'payment' %}
+                                    <i class="fas fa-credit-card fa-lg text-info me-3"></i>
+                                {% elif item.template__category == 'shipping' %}
+                                    <i class="fas fa-truck fa-lg text-warning me-3"></i>
+                                {% elif item.template__category == 'account' %}
+                                    <i class="fas fa-user fa-lg text-primary me-3"></i>
+                                {% elif item.template__category == 'promotional' %}
+                                    <i class="fas fa-megaphone fa-lg text-danger me-3"></i>
+                                {% elif item.template__category == 'system' %}
+                                    <i class="fas fa-cog fa-lg text-secondary me-3"></i>
+                                {% else %}
+                                    <i class="fas fa-circle fa-lg text-muted me-3"></i>
+                                {% endif %}
+                                <span class="fw-500 text-capitalize">{{ item.template__category }}</span>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill px-3 py-2">{{ item.count|intcomma }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted text-center py-4">
+                            <i class="fas fa-inbox fa-2x mb-2" style="display: block; opacity: 0.5;"></i>
+                            No categorized notifications yet
+                        </p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Notifications Activity Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center border-bottom">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history me-2"></i>Recent Activity
+                    </h6>
+                    <a href="{% url 'notifications:admin_notification_list' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-arrow-right me-1"></i>View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if stats.recent_notifications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">User</th>
+                                    <th>Type</th>
+                                    <th style="min-width: 250px;">Title</th>
+                                    <th>Status</th>
+                                    <th>Sent</th>
+                                    <th class="text-center" width="60">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for notification in stats.recent_notifications %}
+                                <tr data-notification-id="{{ notification.notification_id }}">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-2" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 600; font-size: 0.85rem;">
+                                                {{ notification.user.username|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-500">{{ notification.user.get_full_name|default:notification.user.username }}</div>
+                                                <small class="text-muted">{{ notification.user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if notification.notification_type == 'email' %}
+                                            <span class="badge bg-info"><i class="fas fa-envelope me-1"></i>Email</span>
+                                        {% elif notification.notification_type == 'sms' %}
+                                            <span class="badge bg-success"><i class="fas fa-mobile-alt me-1"></i>SMS</span>
+                                        {% elif notification.notification_type == 'push' %}
+                                            <span class="badge bg-warning"><i class="fas fa-bell me-1"></i>Push</span>
+                                        {% elif notification.notification_type == 'in_app' %}
+                                            <span class="badge bg-primary"><i class="fas fa-inbox me-1"></i>In-App</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ notification.get_notification_type_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" title="{{ notification.title|default:'' }}">
+                                            <strong>{{ notification.title|truncatewords:5 }}</strong>
+                                        </div>
+                                        {% if notification.message %}
+                                        <small class="text-muted d-block text-truncate">{{ notification.message|truncatewords:3 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if notification.status == 'sent' %}
+                                        <span class="badge bg-success"><i class="fas fa-paper-plane me-1"></i>Sent</span>
+                                        {% elif notification.status == 'delivered' %}
+                                        <span class="badge bg-info"><i class="fas fa-check-circle me-1"></i>Delivered</span>
+                                        {% elif notification.status == 'read' %}
+                                        <span class="badge bg-primary"><i class="fas fa-envelope-open me-1"></i>Read</span>
+                                        {% elif notification.status == 'failed' %}
+                                        <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Failed</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ notification.status|upper }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if notification.sent_at %}
+                                        <small class="text-muted" title="{{ notification.sent_at|date:'Y-m-d H:i:s' }}">
+                                            {{ notification.sent_at|timesince }} ago
+                                        </small>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-hourglass-half me-1"></i>Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'notifications:admin_notification_detail' notification.notification_id %}" 
+                                           class="btn btn-sm btn-icon btn-outline-primary" 
+                                           title="View Details"
+                                           data-bs-toggle="tooltip">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell fa-3x text-muted mb-3" style="opacity: 0.3;"></i>
+                        <p class="text-muted mt-2">No notifications yet</p>
+                        <a href="{% url 'notifications:admin_send_bulk_notification' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="fas fa-paper-plane me-1"></i>Send First Notification
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Root CSS Variables */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+        --danger-gradient: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+        --radius-lg: 12px;
+        --radius-md: 8px;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.12);
+        --border-color: #e5e7eb;
+        --card-bg: #ffffff;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+    }
+
+    /* Stat Cards - Premium Gradient Styling */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 130px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.75rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.12) rotate(-10deg);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Gradient Backgrounds */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+    
+    .bg-danger-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+
+    /* Top Border Gradient per Card */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+
+    /* Stat Card Typography */
+    .stat-card .text-muted {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        opacity: 0.85;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.9rem;
+        margin-bottom: 0;
+        line-height: 1.1;
+    }
+
+    .stat-card small {
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* Info Items */
+    .info-item {
+        padding: 0.85rem 0;
+    }
+
+    .info-item small {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    .font-monospace {
+        font-family: 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* List Group Refinements */
+    .list-group-item {
+        background: transparent;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s ease;
+    }
+
+    .list-group-item:hover {
+        background-color: #f9fafb;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+
+    .list-group-item i {
+        min-width: 24px;
+        transition: transform 0.3s ease;
+    }
+
+    .list-group-item:hover i {
+        transform: scale(1.1);
+    }
+
+    /* Badge Styling */
+    .badge {
+        font-weight: 700;
+        padding: 0.5rem 0.875rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Avatar Styling */
+    .avatar-sm {
+        font-size: 0.9rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .fw-500 {
+        font-weight: 500;
+    }
+
+    /* Cards & Shadows */
+    .card {
+        border: none;
+        border-radius: var(--radius-lg);
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+    }
+
+    .card.shadow {
+        box-shadow: var(--shadow);
+    }
+
+    .card.shadow:hover {
+        box-shadow: var(--shadow-xl);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .card-header {
+        background: var(--card-bg);
+        border-bottom: 2px solid var(--border-color);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .card-header.border-bottom {
+        border-bottom: 2px solid var(--border-color) !important;
+    }
+
+    /* Table Styling */
+    .table {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table thead th {
+        border-bottom: 2px solid var(--border-color);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.8px;
+        color: var(--text-secondary);
+        background: var(--card-bg);
+        padding: 1rem 0.75rem;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        padding: 0.85rem 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Button Styling */
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 50%;
+    }
+
+    .btn-outline-primary {
+        border-width: 1.5px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-primary:hover {
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Alert Styling */
+    .alert {
+        border-radius: var(--radius-md);
+        border: none;
+        font-weight: 500;
+    }
+
+    .alert-success {
+        background-color: #ecfdf5;
+        color: #065f46;
+    }
+
+    .alert-info {
+        background-color: #eff6ff;
+        color: #0c4a6e;
+    }
+
+    /* Button Grid */
+    .d-grid {
+        gap: 0.75rem;
+    }
+
+    .d-grid .btn {
+        justify-content: flex-start;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    /* Empty State */
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Header Section */
+    h1.h3 {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .text-muted.mb-0 {
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.5rem;
+        }
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.6rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .col-xl-3 {
+            width: 50%;
+        }
+        .col-xl-4 {
+            width: 100%;
+        }
+        .col-lg-6 {
+            width: 100%;
+        }
+        .stat-card {
+            min-height: 110px;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.2rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.4rem;
+        }
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .col-xl-3 {
+            width: 100%;
+        }
+        .col-xl-4 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.2rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.7rem;
+        }
+        .table-responsive {
+            font-size: 0.8rem;
+        }
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+        }
+        .ps-4 {
+            padding-left: 0.75rem !important;
+        }
+    }
+
+    /* Loading & Interaction States */
+    .btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn:active {
+        transform: scale(0.98);
+    }
+
+    /* Tooltip Styling */
+    .tooltip-inner {
+        background-color: #1f2937;
+        border-radius: var(--radius-md);
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Notification Trends Chart
+    const trendsData = {{ notification_trends|safe }};
+    
+    if (trendsData && trendsData.length > 0) {
+        const dates = trendsData.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        
+        const counts = trendsData.map(item => item.count);
+        const emailCounts = trendsData.map(item => item.email_count || 0);
+        const smsCounts = trendsData.map(item => item.sms_count || 0);
+        
+        const trendsOptions = {
+            series: [
+                {
+                    name: 'Total',
+                    data: counts,
+                    color: '#6366f1'
+                },
+                {
+                    name: 'Email',
+                    data: emailCounts,
+                    color: '#3b82f6'
+                },
+                {
+                    name: 'SMS',
+                    data: smsCounts,
+                    color: '#10b981'
+                }
+            ],
+            chart: {
+                height: 320,
+                type: 'area',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                },
+                zoom: {
+                    enabled: true
+                },
+                fontFamily: 'Inter, system-ui, sans-serif'
+            },
+            colors: ['#6366f1', '#3b82f6', '#10b981'],
+            stroke: {
+                width: 2.5,
+                curve: 'smooth',
+                lineCap: 'round'
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.4,
+                    opacityTo: 0.05,
+                    colorStops: [
+                        { offset: 0, color: '#6366f1', opacity: 0.4 },
+                        { offset: 100, color: '#6366f1', opacity: 0.05 }
+                    ]
+                }
+            },
+            xaxis: {
+                categories: dates,
+                type: 'category',
+                labels: {
+                    style: {
+                        colors: '#6b7280',
+                        fontSize: '12px',
+                        fontWeight: 500
+                    }
+                },
+                axisBorder: {
+                    show: false
+                },
+                axisTicks: {
+                    show: false
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#6b7280',
+                        fontSize: '12px'
+                    }
+                }
+            },
+            grid: {
+                borderColor: '#e5e7eb',
+                strokeDashArray: 4,
+                padding: {
+                    top: 10,
+                    right: 10,
+                    bottom: 10,
+                    left: 0
+                }
+            },
+            tooltip: {
+                theme: 'light',
+                style: {
+                    fontSize: '12px',
+                    fontFamily: 'Inter'
+                },
+                y: {
+                    formatter: function(value) {
+                        return value + ' notifications';
+                    }
+                }
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'left',
+                fontSize: '13px',
+                fontWeight: 600,
+                markers: {
+                    width: 8,
+                    height: 8,
+                    radius: 2
+                }
+            },
+            responsive: [{
+                breakpoint: 768,
+                options: {
+                    chart: {
+                        height: 250
+                    }
+                }
+            }]
+        };
+        
+        const trendsChart = new ApexCharts(document.querySelector("#notificationTrendsChart"), trendsOptions);
+        trendsChart.render();
+    }
+    
+    // Notification Type Distribution Chart
+    const typeData = {{ notification_by_type|safe }};
+    
+    if (typeData && typeData.length > 0) {
+        const typeLabels = typeData.map(item => {
+            const typeMap = {
+                'email': 'Email',
+                'sms': 'SMS',
+                'push': 'Push Notification',
+                'in_app': 'In-App',
+                'whatsapp': 'WhatsApp'
+            };
+            return typeMap[item.notification_type] || item.notification_type.charAt(0).toUpperCase() + item.notification_type.slice(1);
+        });
+        const typeSeries = typeData.map(item => item.count);
+        
+        const typeOptions = {
+            series: typeSeries,
+            chart: {
+                height: 320,
+                type: 'donut',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: true
+                    }
+                }
+            },
+            labels: typeLabels,
+            colors: ['#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
+            legend: {
+                position: 'bottom',
+                fontSize: '12px',
+                fontWeight: 600,
+                fontFamily: 'Inter',
+                labels: {
+                    colors: '#6b7280',
+                    useSeriesColors: false
+                },
+                markers: {
+                    width: 8,
+                    height: 8,
+                    radius: 2
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '70%',
+                        labels: {
+                            show: true,
+                            name: {
+                                show: true,
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: '#6b7280'
+                            },
+                            value: {
+                                show: true,
+                                fontSize: '20px',
+                                fontWeight: 700,
+                                color: '#1f2937'
+                            },
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: '#6b7280'
+                            }
+                        }
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            tooltip: {
+                enabled: true,
+                theme: 'light',
+                style: {
+                    fontSize: '12px',
+                    fontFamily: 'Inter'
+                },
+                y: {
+                    formatter: function(value) {
+                        return value + ' notifications';
+                    }
+                }
+            },
+            states: {
+                hover: {
+                    filter: {
+                        type: 'darken',
+                        value: 0.15
+                    }
+                }
+            },
+            responsive: [{
+                breakpoint: 768,
+                options: {
+                    chart: {
+                        height: 280
+                    }
+                }
+            }]
+        };
+        
+        const typeChart = new ApexCharts(document.querySelector("#notificationTypeChart"), typeOptions);
+        typeChart.render();
+    }
+
+    // Add smooth scroll and animation to stat cards
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        card.style.animation = `slideUp 0.5s ease forwards`;
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+
+// Add keyframe animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
+{% endblock %}

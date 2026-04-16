@@ -1,0 +1,137 @@
+<!-- payments/templates/payments/success.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Successful - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Success Card -->
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i>Payment Successful</h4>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <div class="success-icon" style="font-size: 5rem; color: #28a745;">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+
+                    <!-- Success Message -->
+                    <h3 class="card-title mb-3">Thank You for Your Payment!</h3>
+                    <p class="card-text text-muted mb-4">
+                        Your payment has been successfully processed. Your order is now being prepared for shipment.
+                    </p>
+
+                    <!-- Payment Details -->
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">Payment Details</h6>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><strong>Payment ID:</strong></td>
+                                            <td>{{ payment.payment_id }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Order #:</strong></td>
+                                            <td>{{ order.order_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Amount Paid:</strong></td>
+                                            <td>{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Payment Method:</strong></td>
+                                            <td>{{ payment.get_payment_method_display }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Date:</strong></td>
+                                            <td>{{ payment.paid_at|date:"F j, Y, g:i a" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Summary -->
+                    {% if order %}
+                    <div class="alert alert-info text-start mb-4">
+                        <h6 class="alert-heading">Order Summary</h6>
+                        <p class="mb-1"><strong>Items:</strong> {{ order.items.count }} item(s)</p>
+                        <p class="mb-1"><strong>Shipping:</strong> {{ order.shipping_address.address|truncatechars:30 }}</p>
+                        <p class="mb-1"><strong>Estimated Delivery:</strong> 3-5 business days</p>
+                        <p class="mb-0"><strong>Order Status:</strong> <span class="badge bg-success">{{ order.get_status_display }}</span></p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Next Steps -->
+                    <div class="alert alert-light border mb-4">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>What Happens Next?</h6>
+                        <ol class="mb-0">
+                            <li>You will receive an order confirmation email</li>
+                            <li>Your order will be processed within 24 hours</li>
+                            <li>You will receive shipping updates via email/SMS</li>
+                            <li>Track your order from your account dashboard</li>
+                        </ol>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <a href="{% url 'order_detail' order.order_number %}" class="btn btn-primary">
+                            <i class="fas fa-shopping-bag me-2"></i>
+                            View Order Details
+                        </a>
+                        <a href="{% url 'shop' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Continue Shopping
+                        </a>
+                        <a href="{% url 'account_dashboard' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-user me-2"></i>
+                            Go to Dashboard
+                        </a>
+                    </div>
+
+                    <!-- Email Receipt -->
+                    <div class="mt-4">
+                        <p class="text-muted small">
+                            <i class="fas fa-envelope me-1"></i>
+                            A receipt has been sent to <strong>{{ payment.customer_email }}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Information -->
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <h6 class="card-title mb-3">Need Help?</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-question-circle fa-2x text-primary mb-2"></i>
+                            <h6>FAQs</h6>
+                            <p class="small text-muted">Check our frequently asked questions</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-headset fa-2x text-primary mb-2"></i>
+                            <h6>Customer Support</h6>
+                            <p class="small text-muted">Contact our support team</p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <i class="fas fa-shipping-fast fa-2x text-primary mb-2"></i>
+                            <h6>Track Order</h6>
+                            <p class="small text-muted">Track your shipment status</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

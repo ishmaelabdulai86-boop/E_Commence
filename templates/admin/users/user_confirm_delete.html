@@ -1,0 +1,320 @@
+{% extends 'admin/admin_base.html' %}
+{% load static %}
+
+{% block title %}Delete User - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-2">Delete User</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'analytics:analytics_dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'users:admin_user_list' %}">Users</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Delete {{ user_obj.username }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'users:admin_user_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <!-- Warning Card -->
+            <div class="card border-danger border-2 shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- User Info -->
+                    <div class="text-center mb-4">
+                        {% if user_obj.profile_picture_url %}
+                        <img src="{{ user_obj.profile_picture_url }}" 
+                             alt="{{ user_obj.username }}" 
+                             class="rounded-circle mb-3" width="100" height="100">
+                        {% else %}
+                        <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3" 
+                             style="width: 100px; height: 100px;">
+                            <i class="fas fa-user text-danger fa-3x"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <h3 class="mb-2">{{ user_obj.get_full_name|default:user_obj.username }}</h3>
+                        <p class="text-muted mb-4">@{{ user_obj.username }} • {{ user_obj.email }}</p>
+                        
+                        <div class="d-flex justify-content-center gap-2 mb-4">
+                            <span class="badge bg-{% if user_obj.role == 'admin' %}danger{% elif user_obj.role == 'seller' %}warning{% else %}info{% endif %}">
+                                {{ user_obj.get_role_display }}
+                            </span>
+                            {% if user_obj.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                            <span class="badge bg-secondary">
+                                Joined: {{ user_obj.date_joined|date:"M d, Y" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Warning Message -->
+                    <div class="alert alert-danger border-danger">
+                        <div class="d-flex">
+                            <i class="fas fa-exclamation-circle fa-2x me-3 mt-1"></i>
+                            <div>
+                                <h5 class="alert-heading">Warning: This action cannot be undone!</h5>
+                                <p class="mb-0">
+                                    You are about to permanently delete this user account and all associated data.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Impact Summary -->
+                    <div class="card border-warning mb-4">
+                        <div class="card-header bg-warning bg-opacity-10 text-warning">
+                            <h6 class="mb-0">
+                                <i class="fas fa-list-check me-2"></i>What will be deleted:
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-user text-danger me-2"></i>
+                                    User profile and account information
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-shopping-cart text-danger me-2"></i>
+                                    All order history ({{ order_stats.total_orders }} orders)
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-heart text-danger me-2"></i>
+                                    Wishlist items
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-comment text-danger me-2"></i>
+                                    Product reviews and ratings
+                                </li>
+                                <li>
+                                    <i class="fas fa-image text-danger me-2"></i>
+                                    Profile picture and uploaded files
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Summary -->
+                    <div class="row text-center mb-4">
+                        <div class="col-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <h3 class="text-danger mb-1">{{ order_stats.total_orders }}</h3>
+                                    <small class="text-muted">Total Orders</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <h3 class="text-danger mb-1">${{ order_stats.total_spent|floatformat:2 }}</h3>
+                                    <small class="text-muted">Total Spent</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <h3 class="text-danger mb-1">{{ wishlist_items|length }}</h3>
+                                    <small class="text-muted">Wishlist Items</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Confirmation Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                            <label class="form-check-label text-danger fw-bold" for="confirmDelete">
+                                I understand that this action is permanent and cannot be undone.
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="notifyUser" name="notify_user">
+                            <label class="form-check-label" for="notifyUser">
+                                Notify user via email about account deletion
+                            </label>
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label for="deleteReason" class="form-label">
+                                <i class="fas fa-comment me-1"></i>Reason for deletion (optional):
+                            </label>
+                            <textarea class="form-control" id="deleteReason" name="reason" rows="3" 
+                                      placeholder="Enter reason for deletion..."></textarea>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-5">
+                            <a href="{% url 'users:admin_user_detail' user_obj.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'users:admin_user_edit' user_obj.pk %}" class="btn btn-warning">
+                                    <i class="fas fa-edit me-2"></i>Edit Instead
+                                </a>
+                                
+                                <button type="submit" class="btn btn-danger" id="deleteButton" disabled>
+                                    <i class="fas fa-trash me-2"></i>Delete User Permanently
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Alternative Actions -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Consider These Alternatives
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-success h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-slash fa-2x text-success mb-3"></i>
+                                    <h6>Deactivate Account</h6>
+                                    <p class="small text-muted mb-0">
+                                        Temporarily disable login while preserving all data.
+                                    </p>
+                                    <a href="{% url 'users:admin_user_edit' user_obj.pk %}#deactivate" 
+                                       class="btn btn-sm btn-outline-success mt-3">
+                                        Deactivate
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-warning h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-ban fa-2x text-warning mb-3"></i>
+                                    <h6>Restrict Access</h6>
+                                    <p class="small text-muted mb-0">
+                                        Change role to limit permissions without deleting.
+                                    </p>
+                                    <a href="{% url 'users:admin_user_edit' user_obj.pk %}#role" 
+                                       class="btn btn-sm btn-outline-warning mt-3">
+                                        Change Role
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const confirmCheckbox = document.getElementById('confirmDelete');
+        const deleteButton = document.getElementById('deleteButton');
+        
+        if (confirmCheckbox && deleteButton) {
+            confirmCheckbox.addEventListener('change', function() {
+                deleteButton.disabled = !this.checked;
+            });
+            
+            deleteButton.addEventListener('click', function(e) {
+                if (!confirmCheckbox.checked) {
+                    e.preventDefault();
+                    alert('Please confirm that you understand this action is permanent.');
+                    return false;
+                }
+                
+                // Final confirmation
+                if (!confirm('FINAL WARNING: Are you absolutely sure you want to delete this user account? This action cannot be undone!')) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+                this.disabled = true;
+            });
+        }
+        
+        // Add visual feedback
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(textarea => {
+            textarea.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            textarea.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focused');
+            });
+        });
+    });
+</script>
+
+<style>
+    .card.border-danger {
+        border-width: 2px !important;
+    }
+    
+    .btn-danger:disabled {
+        opacity: 0.5;
+    }
+    
+    #confirmDelete:checked {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+    }
+    
+    .card.border-success, .card.border-warning {
+        transition: transform 0.2s ease;
+    }
+    
+    .card.border-success:hover, .card.border-warning:hover {
+        transform: translateY(-2px);
+    }
+    
+    .form-group.focused {
+        position: relative;
+    }
+    
+    .form-group.focused::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary-color), var(--info-color));
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}

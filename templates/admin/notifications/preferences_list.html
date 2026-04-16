@@ -1,0 +1,288 @@
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}User Notification Preferences{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-user-cog me-2"></i>User Notification Preferences
+            </h1>
+            <p class="text-muted mb-0">Manage user notification settings</p>
+        </div>
+        <div>
+            <a href="{% url 'notifications:admin_notification_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.total|intcomma }}</h2>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.email_opt_in|intcomma }}</h2>
+                    <p class="text-muted mb-0">Email Opt-in</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.sms_opt_in|intcomma }}</h2>
+                    <p class="text-muted mb-0">SMS Opt-in</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <h2 class="mb-0">{{ stats.do_not_disturb|intcomma }}</h2>
+                    <p class="text-muted mb-0">Do Not Disturb</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Email Opt-in</label>
+                    <select name="email_opt_in" class="form-select">
+                        <option value="">All Users</option>
+                        <option value="true" {% if filter_params.email_opt_in == 'true' %}selected{% endif %}>Opted In</option>
+                        <option value="false" {% if filter_params.email_opt_in == 'false' %}selected{% endif %}>Opted Out</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">SMS Opt-in</label>
+                    <select name="sms_opt_in" class="form-select">
+                        <option value="">All Users</option>
+                        <option value="true" {% if filter_params.sms_opt_in == 'true' %}selected{% endif %}>Opted In</option>
+                        <option value="false" {% if filter_params.sms_opt_in == 'false' %}selected{% endif %}>Opted Out</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Do Not Disturb</label>
+                    <select name="do_not_disturb" class="form-select">
+                        <option value="">All Users</option>
+                        <option value="true" {% if filter_params.do_not_disturb == 'true' %}selected{% endif %}>Enabled</option>
+                        <option value="false" {% if filter_params.do_not_disturb == 'false' %}selected{% endif %}>Disabled</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search by username, email, or name..." 
+                           value="{{ filter_params.q }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'notifications:admin_preferences_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Preferences Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email Preferences</th>
+                            <th>SMS Preferences</th>
+                            <th>Push Preferences</th>
+                            <th>Global Settings</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for preference in preferences %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        <div class="avatar-title bg-light rounded">
+                                            {{ preference.user.username|first|upper }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ preference.user.username }}</h6>
+                                        <small class="text-muted">{{ preference.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if preference.email_order_updates %}
+                                    <span class="badge bg-success" title="Order Updates">O</span>
+                                    {% endif %}
+                                    {% if preference.email_payment_updates %}
+                                    <span class="badge bg-success" title="Payment Updates">P</span>
+                                    {% endif %}
+                                    {% if preference.email_shipping_updates %}
+                                    <span class="badge bg-success" title="Shipping Updates">S</span>
+                                    {% endif %}
+                                    {% if preference.email_promotions %}
+                                    <span class="badge bg-success" title="Promotions">PR</span>
+                                    {% endif %}
+                                    {% if preference.email_account_updates %}
+                                    <span class="badge bg-success" title="Account Updates">A</span>
+                                    {% endif %}
+                                    
+                                    {% if not preference.email_order_updates and not preference.email_payment_updates and not preference.email_shipping_updates and not preference.email_promotions and not preference.email_account_updates %}
+                                    <span class="badge bg-danger">All Off</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if preference.sms_order_updates %}
+                                    <span class="badge bg-success" title="Order Updates">O</span>
+                                    {% endif %}
+                                    {% if preference.sms_payment_updates %}
+                                    <span class="badge bg-success" title="Payment Updates">P</span>
+                                    {% endif %}
+                                    {% if preference.sms_shipping_updates %}
+                                    <span class="badge bg-success" title="Shipping Updates">S</span>
+                                    {% endif %}
+                                    {% if preference.sms_promotions %}
+                                    <span class="badge bg-success" title="Promotions">PR</span>
+                                    {% endif %}
+                                    
+                                    {% if not preference.sms_order_updates and not preference.sms_payment_updates and not preference.sms_shipping_updates and not preference.sms_promotions %}
+                                    <span class="badge bg-danger">All Off</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if preference.push_order_updates %}
+                                    <span class="badge bg-success" title="Order Updates">O</span>
+                                    {% endif %}
+                                    {% if preference.push_payment_updates %}
+                                    <span class="badge bg-success" title="Payment Updates">P</span>
+                                    {% endif %}
+                                    {% if preference.push_shipping_updates %}
+                                    <span class="badge bg-success" title="Shipping Updates">S</span>
+                                    {% endif %}
+                                    {% if preference.push_promotions %}
+                                    <span class="badge bg-success" title="Promotions">PR</span>
+                                    {% endif %}
+                                    
+                                    {% if not preference.push_order_updates and not preference.push_payment_updates and not preference.push_shipping_updates and not preference.push_promotions %}
+                                    <span class="badge bg-danger">All Off</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if preference.do_not_disturb %}
+                                    <span class="badge bg-warning" title="Do Not Disturb">DND</span>
+                                    {% endif %}
+                                    {% if preference.quiet_hours_start and preference.quiet_hours_end %}
+                                    <span class="badge bg-info" title="Quiet Hours">
+                                        {{ preference.quiet_hours_start|time:"H:i" }}-{{ preference.quiet_hours_end|time:"H:i" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted" title="{{ preference.updated_at }}">
+                                    {{ preference.updated_at|timesince }} ago
+                                </small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-user-cog fa-2x text-muted mb-3"></i>
+                                <p class="text-muted">No preferences found</p>
+                                {% if filter_params %}
+                                <a href="{% url 'notifications:admin_preferences_list' %}" class="btn btn-sm btn-outline-primary">
+                                    Clear Filters
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if preferences.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-3">
+                    {% if preferences.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ preferences.previous_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for i in preferences.paginator.page_range %}
+                        {% if preferences.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                        {% elif i > preferences.number|add:'-3' and i < preferences.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ i }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                {{ i }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if preferences.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ preferences.next_page_number }}{% for key, value in filter_params.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.badge[title] {
+    cursor: help;
+}
+.avatar-sm {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1>Add New Notification Template</h1>
+            <p class="text-muted">Create a new notification template for emails, SMS, or push notifications.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Template Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'notifications:admin_template_add' %}">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Template Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required 
+                                       placeholder="e.g., Order Confirmation Email">
+                                <div class="form-text">Unique name to identify this template.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="template_type" class="form-label">Template Type *</label>
+                                <select class="form-select" id="template_type" name="template_type" required>
+                                    <option value="">Select type...</option>
+                                    {% for value, label in template_types %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select category...</option>
+                                    {% for value, label in categories %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="1">Low</option>
+                                    <option value="2" selected>Medium</option>
+                                    <option value="3">High</option>
+                                    <option value="4">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" class="form-control" id="subject" name="subject" 
+                                   placeholder="Email subject or notification title">
+                            <div class="form-text">For emails and push notifications.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="html_content" class="form-label">HTML Content</label>
+                            <textarea class="form-control" id="html_content" name="html_content" 
+                                      rows="8" placeholder="HTML content for emails"></textarea>
+                            <div class="form-text">Use &#123;&#123; variable_name &#125;&#125; for dynamic content.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="text_content" class="form-label">Text Content</label>
+                            <textarea class="form-control" id="text_content" name="text_content" 
+                                      rows="4" placeholder="Plain text content for SMS"></textarea>
+                            <div class="form-text">Plain text version for SMS or fallback.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="push_content" class="form-label">Push Notification Content</label>
+                            <textarea class="form-control" id="push_content" name="push_content" 
+                                      rows="3" placeholder="Short message for push notifications"></textarea>
+                            <div class="form-text">Short message for push notifications (max 256 chars).</div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">Active</label>
+                            <div class="form-text">Only active templates can be used for sending notifications.</div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Create Template</button>
+                            <a href="{% url 'notifications:admin_template_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Variables</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Use these variables in your template content:</p>
+                    <ul class="list-group list-group-flush">
+                        {% for var in default_variables %}
+                            <li class="list-group-item">
+                                <code>&#123;&#123; {{ var }} &#125;&#125;</code>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="mt-3">
+                        <p class="text-muted small">
+                            You can also use:
+                            <br><code>&#123;&#123; user.username &#125;&#125;</code>
+                            <br><code>&#123;&#123; user.email &#125;&#125;</code>
+                            <br><code>&#123;&#123; user.first_name &#125;&#125;</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Template Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">✓ Use clear, descriptive names</li>
+                        <li class="mb-2">✓ Test templates before marking as active</li>
+                        <li class="mb-2">✓ Keep push notifications short and actionable</li>
+                        <li class="mb-2">✓ Include both HTML and text versions for emails</li>
+                        <li class="mb-2">✓ Use appropriate categories for better filtering</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple type-based content switching
+    document.getElementById('template_type').addEventListener('change', function() {
+        const type = this.value;
+        const htmlContent = document.getElementById('html_content');
+        const textContent = document.getElementById('text_content');
+        const pushContent = document.getElementById('push_content');
+        
+        // Adjust placeholders based on type
+        switch(type) {
+            case 'email':
+                htmlContent.placeholder = 'HTML content for emails...';
+                textContent.placeholder = 'Plain text version for email clients that don\'t support HTML...';
+                pushContent.placeholder = 'Not used for email templates';
+                break;
+            case 'sms':
+                htmlContent.placeholder = 'Not used for SMS templates';
+                textContent.placeholder = 'SMS message text (max 160 characters recommended)...';
+                pushContent.placeholder = 'Not used for SMS templates';
+                break;
+            case 'push':
+                htmlContent.placeholder = 'Not used for push notification templates';
+                textContent.placeholder = 'Not used for push notification templates';
+                pushContent.placeholder = 'Push notification message (max 256 characters)...';
+                break;
+        }
+    });
+</script>
+{% endblock %}

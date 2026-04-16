@@ -1,0 +1,618 @@
+<!-- templates/admin/users/dashboard.html -->
+{% extends 'admin/admin_base.html' %}
+{% load humanize %}
+
+{% block title %}Users Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-users me-2"></i>Users Dashboard
+            </h1>
+            <p class="text-muted mb-0">User management and analytics</p>
+        </div>
+        <div>
+            <a href="{% url 'users:admin_user_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-1"></i>All Users
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-users fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Users</h6>
+                            <h3 class="mb-0 fw-bold">{{ total_users|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-user-plus fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">New Today</h6>
+                            <h3 class="mb-0 fw-bold">{{ new_users_today|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-user-check fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Active Users</h6>
+                            <h3 class="mb-0 fw-bold">{{ active_users|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-shield-alt fa-fw fa-xl"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Verified</h6>
+                            <h3 class="mb-0 fw-bold">{{ verified_users|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Data -->
+    <div class="row mb-4">
+        <!-- User Growth Chart -->
+        <div class="col-xl-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line me-2 fa-fw"></i>User Growth (Last 7 Days)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="userGrowthChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Role Distribution Chart -->
+        <div class="col-xl-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie me-2 fa-fw"></i>Role Distribution
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="roleDistributionChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-clock me-2 fa-fw"></i>Recent Signups
+                    </h6>
+                    <a href="{% url 'users:admin_user_list' %}" class="btn btn-sm btn-outline-primary">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Joined</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in recent_users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-3">
+                                                {% if user.profile_picture_url %}
+                                                <img src="{{ user.profile_picture_url }}" 
+                                                     alt="{{ user.username }}" 
+                                                     class="rounded-circle" width="40" height="40">
+                                                {% else %}
+                                                <div class="avatar-initials bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 40px; height: 40px; font-weight: bold;">
+                                                    {{ user.username|first|upper }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ user.username }}</h6>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'seller' %}warning{% else %}secondary{% endif %}">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted" title="{{ user.date_joined }}">
+                                            {{ user.date_joined|timesince }} ago
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                        {% if user.email_verified %}
+                                        <span class="badge bg-info ms-1">Verified</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-user fa-2x mb-3"></i>
+                                        <p>No users found</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Top Customers -->
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-trophy me-2 fa-fw"></i>Top Customers
+                    </h6>
+                    <span class="text-muted">By Total Spending</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th class="text-end">Orders</th>
+                                    <th class="text-end">Total Spent</th>
+                                    <th>Last Order</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in top_customers %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle me-3">
+                                                {% if customer.profile_picture_url %}
+                                                <img src="{{ customer.profile_picture_url }}" 
+                                                     alt="{{ customer.username }}" 
+                                                     class="rounded-circle" width="40" height="40">
+                                                {% else %}
+                                                <div class="avatar-initials bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 40px; height: 40px; font-weight: bold;">
+                                                    {{ customer.username|first|upper }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ customer.username }}</h6>
+                                                <small class="text-muted">{{ customer.email|default:"No email" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">{{ customer.order_count|default:"0" }}</td>
+                                    <td class="text-end">
+                                        <strong>${{ customer.total_spent|default:"0"|floatformat:2|intcomma }}</strong>
+                                    </td>
+                                    <td>
+                                        {% with last_order=customer.order_set.last %}
+                                        {% if last_order %}
+                                        <small class="text-muted" title="{{ last_order.created_at }}">
+                                            {{ last_order.created_at|timesince }} ago
+                                        </small>
+                                        {% else %}
+                                        <span class="text-muted">Never</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-shopping-cart fa-2x mb-3"></i>
+                                        <p>No customer data available</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* CSS Variables */
+    :root {
+        --primary-color: #6366f1;
+        --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        --success-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+        --info-gradient: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+        --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+        --card-bg: #ffffff;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        --radius-lg: 12px;
+    }
+
+    /* Modern Stat Cards - Gradient Style */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles - PROPER SIZING */
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem; /* Base size */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    /* Ensure Font Awesome icons inherit size properly */
+    .icon-circle i {
+        font-size: inherit !important;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Font Awesome size classes for the icons */
+    .icon-circle .fa-fw {
+        width: auto;
+    }
+
+    .icon-circle .fa-xl {
+        font-size: 1.5em !important;
+        line-height: 0.04167em;
+        vertical-align: -0.125em;
+    }
+
+    /* Hover effect */
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds */
+    .bg-primary-gradient {
+        background: var(--primary-gradient) !important;
+    }
+    
+    .bg-success-gradient {
+        background: var(--success-gradient) !important;
+    }
+    
+    .bg-info-gradient {
+        background: var(--info-gradient) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: var(--warning-gradient) !important;
+    }
+
+    /* Card specific top borders */
+    .stat-card:nth-child(1)::before { background: var(--primary-gradient); }
+    .stat-card:nth-child(2)::before { background: var(--success-gradient); }
+    .stat-card:nth-child(3)::before { background: var(--info-gradient); }
+    .stat-card:nth-child(4)::before { background: var(--warning-gradient); }
+
+    .stat-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Avatar styling */
+    .avatar-circle img {
+        object-fit: cover;
+    }
+    
+    .avatar-initials {
+        font-size: 1rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            font-size: 1.4rem;
+        }
+        .icon-circle .fa-xl {
+            font-size: 1.4em !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-xl-3 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 110px;
+        }
+        .icon-circle {
+            width: 52px;
+            height: 52px;
+            font-size: 1.3rem;
+        }
+        .icon-circle .fa-xl {
+            font-size: 1.3em !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.4rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-xl-3 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.2rem;
+        }
+        .icon-circle .fa-xl {
+            font-size: 1.2em !important;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.75rem;
+        }
+    }
+
+    /* For even larger icons, use these classes */
+    .icon-circle.lg {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+    }
+    
+    .icon-circle.xl {
+        width: 80px;
+        height: 80px;
+        font-size: 2.5rem;
+    }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // User Growth Chart
+        const growthCtx = document.getElementById('userGrowthChart');
+        if (growthCtx) {
+            // Check if user_growth is a string (JSON) or already an object
+            let growthData = [];
+            try {
+                if (typeof {{ user_growth|safe }} === 'string') {
+                    growthData = JSON.parse({{ user_growth|safe }});
+                } else {
+                    growthData = {{ user_growth|safe }};
+                }
+            } catch (e) {
+                console.error('Error parsing growth data:', e);
+            }
+            
+            const growthChart = new Chart(growthCtx, {
+                type: 'bar',
+                data: {
+                    labels: growthData.map(item => {
+                        const date = new Date(item.date);
+                        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                    }),
+                    datasets: [{
+                        label: 'New Users',
+                        data: growthData.map(item => item.count),
+                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                        borderColor: 'rgb(99, 102, 241)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Role Distribution Chart
+        const roleCtx = document.getElementById('roleDistributionChart');
+        if (roleCtx) {
+            let roleData = [];
+            try {
+                if (typeof {{ role_distribution|safe }} === 'string') {
+                    roleData = JSON.parse({{ role_distribution|safe }});
+                } else {
+                    roleData = {{ role_distribution|safe }};
+                }
+            } catch (e) {
+                console.error('Error parsing role data:', e);
+            }
+            
+            const roleChart = new Chart(roleCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: roleData.map(item => {
+                        const roleMap = {
+                            'customer': 'Customer',
+                            'seller': 'Seller',
+                            'admin': 'Admin'
+                        };
+                        return roleMap[item.role] || item.role;
+                    }),
+                    datasets: [{
+                        data: roleData.map(item => item.count),
+                        backgroundColor: [
+                            '#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

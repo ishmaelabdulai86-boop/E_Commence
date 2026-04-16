@@ -1,0 +1,427 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}{{ product.name }} - Product Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ product.name }}</h1>
+            <p class="text-muted mb-0">SKU: {{ product.sku }}</p>
+        </div>
+        <div>
+            <a href="{% url 'products:admin_product_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Products
+            </a>
+            
+        </div>
+    </div>
+    
+    <!-- Product Info -->
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Product Images</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Main Image Display - Fixed Size -->
+                    <div class="text-center mb-3" style="position: relative; height: 400px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa; border-radius: 8px; overflow: hidden;">
+                        <img id="mainImage" src="{{ product.primary_image_url }}" 
+                             alt="{{ product.name }}" 
+                             class="img-fluid rounded" 
+                             style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                        
+                        <!-- Navigation Buttons -->
+                        <button id="prevImageBtn" type="button" class="btn btn-sm btn-light rounded-circle" 
+                                style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"
+                                title="Previous Image">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="nextImageBtn" type="button" class="btn btn-sm btn-light rounded-circle" 
+                                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"
+                                title="Next Image">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <p class="text-muted text-center mb-3">
+                        Image <span id="currentImageNum">1</span> of <span id="totalImageNum">1</span>
+                    </p>
+                    
+                    <!-- Thumbnail Gallery -->
+                    <div class="row">
+                        {% for image in product.images.all %}
+                        <div class="col-4 mb-3">
+                            <img src="{{ image.image_url }}" 
+                                 alt="Product Image" 
+                                 class="img-fluid rounded border gallery-thumb" 
+                                 style="height: 80px; width: 100%; object-fit: cover; cursor: pointer; border: 2px solid #ddd;"
+                                 data-image-url="{{ image.image_url }}"
+                                 data-image-num="{{ forloop.counter }}"
+                                 title="Image {{ forloop.counter }}">
+                            {% if image.is_primary %}
+                            <small class="text-success d-block text-center">Primary</small>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-4">
+                            <i class="fas fa-image fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No images uploaded</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Quick Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Rating</small>
+                        <div class="d-flex align-items-center">
+                            <div class="text-warning">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= product.rating|floatformat:0|add:"0" %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <span class="ms-2">{{ product.rating }} ({{ product.review_count }} reviews)</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Sold Count</small>
+                        <div class="h5">{{ product.sold_count }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Created</small>
+                        <div>{{ product.created_at|date:"F d, Y" }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Last Updated</small>
+                        <div>{{ product.updated_at|date:"F d, Y" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Details -->
+        <div class="col-lg-8">
+            <!-- Basic Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Basic Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Name</label>
+                            <div class="form-control-plaintext">{{ product.name }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Category</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-primary">{{ product.category.name }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">SKU</label>
+                            <div class="form-control-plaintext"><code>{{ product.sku }}</code></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Stock</label>
+                            <div class="form-control-plaintext">
+                                {% if product.stock <= product.low_stock_threshold %}
+                                <span class="badge bg-warning">{{ product.stock }}</span>
+                                {% elif product.stock == 0 %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                                {% else %}
+                                <span class="badge bg-success">{{ product.stock }}</span>
+                                {% endif %}
+                                <small class="text-muted ms-2">(Low stock threshold: {{ product.low_stock_threshold }})</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+                <!-- Pricing -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Pricing Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-muted">Display Price (Customer sees)</label>
+                                <div class="form-control-plaintext h5 {% if product.discount_price %}text-success{% else %}text-primary{% endif %}">
+                                    {% if product.discount_price %}
+                                    ${{ product.discount_price }} <span class="badge bg-success">SALE</span>
+                                    {% else %}
+                                    ${{ product.price }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-muted">Regular Price</label>
+                                <div class="form-control-plaintext h5 text-primary">${{ product.price }}</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label text-muted">Cost Price</label>
+                                <div class="form-control-plaintext">${{ product.cost_price }}</div>
+                            </div>
+                            {% if product.discount_price %}
+                            <div class="col-md-12">
+                                <label class="form-label text-muted">Discount Details</label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge bg-success">{{ product.discount_percentage }}% OFF</span>
+                                    <span class="ms-2">
+                                        <del class="text-muted">${{ product.price }}</del>
+                                        <strong class="text-success ms-2">${{ product.discount_price }}</strong>
+                                    </span>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Description</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label text-muted">Short Description</label>
+                        <div class="form-control-plaintext">{{ product.description }}</div>
+                    </div>
+                    {% if product.full_description %}
+                    <div>
+                        <label class="form-label text-muted">Full Description</label>
+                        <div class="form-control-plaintext">{{ product.full_description|linebreaks }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Specifications -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Specifications</h6>
+                </div>
+                <div class="card-body">
+                    {% if product.specifications.all %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Specification</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for spec in product.specifications.all %}
+                                <tr>
+                                    <td>{{ spec.key }}</td>
+                                    <td>{{ spec.value }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No specifications added</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Status Flags -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Status & Flags</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" 
+                                       {% if product.is_active %}checked{% endif %} disabled>
+                                <label class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" 
+                                       {% if product.is_featured %}checked{% endif %} disabled>
+                                <label class="form-check-label">Featured</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" 
+                                       {% if product.is_on_sale %}checked{% endif %} disabled>
+                                <label class="form-check-label">On Sale</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" 
+                                       {% if product.discount_price %}checked{% endif %} disabled>
+                                <label class="form-check-label">Has Discount</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Collect all image URLs
+    const allImages = [];
+    
+    // Add primary image first
+    {% if product.primary_image_url %}
+    allImages.push('{{ product.primary_image_url }}');
+    {% endif %}
+    
+    // Add all product images
+    {% for image in product.images.all %}
+    allImages.push('{{ image.image_url }}');
+    {% endfor %}
+    
+    let currentIndex = 0;
+    
+    const mainImage = document.getElementById('mainImage');
+    const currentImageNum = document.getElementById('currentImageNum');
+    const totalImageNum = document.getElementById('totalImageNum');
+    const prevBtn = document.getElementById('prevImageBtn');
+    const nextBtn = document.getElementById('nextImageBtn');
+    
+    console.log('Total images:', allImages.length);
+    console.log('Images:', allImages);
+    
+    // Set total image count
+    if (totalImageNum) {
+        totalImageNum.textContent = allImages.length;
+    }
+    
+    // Update main image display
+    function updateMainImage(index) {
+        if (allImages.length === 0) {
+            console.log('No images available');
+            return;
+        }
+        
+        // Wrap around
+        currentIndex = (index % allImages.length + allImages.length) % allImages.length;
+        console.log('Changing to image index:', currentIndex, 'URL:', allImages[currentIndex]);
+        
+        if (mainImage) {
+            mainImage.src = allImages[currentIndex];
+        }
+        
+        if (currentImageNum) {
+            currentImageNum.textContent = currentIndex + 1;
+        }
+        
+        // Update thumbnail borders - thumbnail index is offset by 1 if there's a primary image
+        const thumbnails = document.querySelectorAll('.gallery-thumb');
+        thumbnails.forEach((thumb, thumbIndex) => {
+            // Thumbnail is for image at index (thumbIndex + 1) if there's a primary image
+            const imageIndex = {% if product.primary_image_url %}thumbIndex + 1{% else %}thumbIndex{% endif %};
+            
+            if (imageIndex === currentIndex) {
+                thumb.style.borderColor = '#0d6efd';
+                thumb.style.borderWidth = '3px';
+            } else {
+                thumb.style.borderColor = '#ddd';
+                thumb.style.borderWidth = '2px';
+            }
+        });
+    }
+    
+    // Navigation buttons
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Previous clicked');
+            updateMainImage(currentIndex - 1);
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Next clicked');
+            updateMainImage(currentIndex + 1);
+        });
+    }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+            console.log('Left arrow pressed');
+            updateMainImage(currentIndex - 1);
+        }
+        if (e.key === 'ArrowRight') {
+            console.log('Right arrow pressed');
+            updateMainImage(currentIndex + 1);
+        }
+    });
+    
+    // Thumbnail click
+    document.querySelectorAll('.gallery-thumb').forEach((thumb, thumbIndex) => {
+        thumb.addEventListener('click', function() {
+            // Thumbnail index needs to account for primary image
+            const imageIndex = {% if product.primary_image_url %}thumbIndex + 1{% else %}thumbIndex{% endif %};
+            console.log('Thumbnail clicked, thumb index:', thumbIndex, 'image index:', imageIndex);
+            updateMainImage(imageIndex);
+        });
+    });
+    
+    // Initialize
+    if (allImages.length > 0) {
+        updateMainImage(0);
+    }
+});
+</script>
+
+<style>
+.gallery-thumb {
+    transition: all 0.3s ease;
+}
+
+.gallery-thumb:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#mainImage {
+    transition: opacity 0.3s ease;
+}
+
+#prevImageBtn, #nextImageBtn {
+    transition: all 0.2s ease;
+}
+
+#prevImageBtn:hover, #nextImageBtn:hover {
+    transform: translateY(-50%) scale(1.1);
+    background-color: #e9ecef !important;
+}
+
+#prevImageBtn:active, #nextImageBtn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+</style>
+{% endblock %}

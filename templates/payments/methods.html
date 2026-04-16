@@ -1,0 +1,207 @@
+<!-- payments/templates/payments/methods.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Methods - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-5">
+                <h1 class="h2 mb-3">Payment Methods</h1>
+                <p class="text-muted">Choose from our secure payment options</p>
+            </div>
+
+            <!-- Available Payment Methods -->
+            <div class="row g-4">
+                <!-- Credit/Debit Card -->
+                <div class="col-md-6">
+                    <div class="card h-100 border {% if stripe_enabled %}border-primary{% else %}border-secondary{% endif %}">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-credit-card fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title">Credit/Debit Card</h5>
+                            <p class="card-text text-muted small">
+                                Pay securely with Visa, MasterCard, or American Express.
+                            </p>
+                            <ul class="list-unstyled small text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>SSL encrypted</li>
+                                <li><i class="fas fa-check text-success me-2"></i>PCI DSS compliant</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Instant processing</li>
+                            </ul>
+                            {% if stripe_enabled %}
+                            <span class="badge bg-success">Available</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Coming Soon</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PayPal -->
+                <div class="col-md-6">
+                    <div class="card h-100 border">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fab fa-paypal fa-3x" style="color: #003087;"></i>
+                            </div>
+                            <h5 class="card-title">PayPal</h5>
+                            <p class="card-text text-muted small">
+                                Pay with your PayPal account or credit/debit card.
+                            </p>
+                            <ul class="list-unstyled small text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>No account needed</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Buyer protection</li>
+                                <li><i class="fas fa-check text-success me-2"></i>International payments</li>
+                            </ul>
+                            <span class="badge bg-success">Available</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paystack -->
+                <div class="col-md-6">
+                    <div class="card h-100 border {% if paystack_enabled %}border-primary{% else %}border-secondary{% endif %}">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-university fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">Paystack</h5>
+                            <p class="card-text text-muted small">
+                                Secure online payments for African businesses.
+                            </p>
+                            <ul class="list-unstyled small text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>Bank transfers</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Card payments</li>
+                                <li><i class="fas fa-check text-success me-2"></i>USSD payments</li>
+                            </ul>
+                            {% if paystack_enabled %}
+                            <span class="badge bg-success">Available</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Coming Soon</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Money -->
+                <div class="col-md-6">
+                    <div class="card h-100 border">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-mobile-alt fa-3x text-info"></i>
+                            </div>
+                            <h5 class="card-title">Mobile Money</h5>
+                            <p class="card-text text-muted small">
+                                Pay with your mobile money account (MTN, Vodafone, Airtel).
+                            </p>
+                            <ul class="list-unstyled small text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>Instant payment</li>
+                                <li><i class="fas fa-check text-success me-2"></i>No card needed</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Widely available</li>
+                            </ul>
+                            <span class="badge bg-success">Available</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash on Delivery -->
+                <div class="col-md-6">
+                    <div class="card h-100 border">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-money-bill-wave fa-3x text-warning"></i>
+                            </div>
+                            <h5 class="card-title">Cash on Delivery</h5>
+                            <p class="card-text text-muted small">
+                                Pay cash when you receive your order.
+                            </p>
+                            <ul class="list-unstyled small text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>No upfront payment</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Pay on delivery</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Available in select areas</li>
+                            </ul>
+                            <span class="badge bg-success">Available</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bank Transfer -->
+                <div class="col-md-6">
+                    <div class="card h-100 border">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-university fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title">Bank Transfer</h5>
+                            <p class="card-text text-muted small">
+                                Transfer funds directly from your bank account.
+                            </p>
+                            <ul class="list-unstyled small text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>No fees</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Direct transfer</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Manual verification</li>
+                            </ul>
+                            <span class="badge bg-success">Available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Information -->
+            <div class="card mt-5">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Payment Security</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <i class="fas fa-lock fa-2x text-success mb-2"></i>
+                            <h6>SSL Encryption</h6>
+                            <p class="small text-muted">All transactions are 256-bit SSL encrypted</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <i class="fas fa-shield-check fa-2x text-success mb-2"></i>
+                            <h6>PCI DSS Compliant</h6>
+                            <p class="small text-muted">We meet the highest security standards</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <i class="fas fa-user-shield fa-2x text-success mb-2"></i>
+                            <h6>Fraud Protection</h6>
+                            <p class="small text-muted">Advanced fraud detection systems</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Need Help?</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Payment Issues</h6>
+                            <ul class="list-unstyled text-muted small">
+                                <li><i class="fas fa-phone me-2"></i>Call: +1 (555) 123-4567</li>
+                                <li><i class="fas fa-envelope me-2"></i>Email: payments@techstore.com</li>
+                                <li><i class="fas fa-clock me-2"></i>Mon-Fri: 9AM-6PM EST</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Quick Links</h6>
+                            <ul class="list-unstyled">
+                                <li><a href="{% url 'faq' %}" class="text-decoration-none">Payment FAQs</a></li>
+                                <li><a href="{% url 'refund_policy' %}" class="text-decoration-none">Refund Policy</a></li>
+                                <li><a href="{% url 'terms' %}" class="text-decoration-none">Terms of Service</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

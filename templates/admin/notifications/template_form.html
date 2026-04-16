@@ -1,0 +1,91 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Add Notification Template - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">Add Notification Template</h1>
+        <a href="{% url 'notifications:admin_template_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Back
+        </a>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Template Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="template_type" class="form-label">Type *</label>
+                        <select class="form-select" id="template_type" name="template_type" required>
+                            <option value="">Select Type</option>
+                            {% for type_code, type_name in template_types %}
+                            <option value="{{ type_code }}">{{ type_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="category" class="form-label">Category *</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="">Select Category</option>
+                            {% for cat_code, cat_name in categories %}
+                            <option value="{{ cat_code }}">{{ cat_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="priority" class="form-label">Priority</label>
+                        <select class="form-select" id="priority" name="priority" required>
+                            <option value="1">Low</option>
+                            <option value="2" selected>Medium</option>
+                            <option value="3">High</option>
+                            <option value="4">Urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="subject" name="subject">
+                </div>
+
+                <div class="mb-3">
+                    <label for="html_content" class="form-label">HTML Content</label>
+                    <textarea class="form-control" id="html_content" name="html_content" rows="6"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="text_content" class="form-label">Text Content</label>
+                    <textarea class="form-control" id="text_content" name="text_content" rows="4"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="push_content" class="form-label">Push Content</label>
+                    <textarea class="form-control" id="push_content" name="push_content" rows="4"></textarea>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                    <label class="form-check-label" for="is_active">Active</label>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Create Template</button>
+                    <a href="{% url 'notifications:admin_template_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

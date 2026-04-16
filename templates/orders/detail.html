@@ -1,0 +1,623 @@
+{% extends 'base.html' %}
+
+{% block title %}Order {{ order.order_number }} - TechStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== Modern Minimal Design ===== */
+    :root {
+        --accent: #3b82f6;
+        --accent-light: #eff6ff;
+        --success-color: #10b981;
+        --text-dark: #111827;
+        --text-light: #6b7280;
+        --border-color: #e5e7eb;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f0f9ff 0%, #fef3c7 100%);
+        min-height: 100vh;
+    }
+
+    .container {
+        background: transparent;
+    }
+
+    /* ===== Cards ===== */
+    .card {
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .card-title {
+        font-weight: 800;
+        color: var(--text-dark);
+        letter-spacing: -0.3px;
+        font-size: 1.3rem;
+    }
+
+    /* ===== Timeline ===== */
+    .order-timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+
+    .order-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, var(--accent), var(--success-color));
+    }
+
+    .timeline-step {
+        position: relative;
+        margin-bottom: 28px;
+    }
+
+    .timeline-step:last-child {
+        margin-bottom: 0;
+    }
+
+    .timeline-step-icon {
+        position: absolute;
+        left: -38px;
+        top: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        z-index: 1;
+        transition: all 0.3s ease;
+    }
+
+    .timeline-step.completed .timeline-step-icon {
+        background: var(--success-color);
+        border-color: var(--success-color);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .timeline-step.current .timeline-step-icon {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        width: 28px;
+        height: 28px;
+        left: -40px;
+    }
+
+    .timeline-step-content h6 {
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+    }
+
+    .timeline-step-content p {
+        margin: 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    /* ===== Product Items Table ===== */
+    .table {
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table thead {
+        background: var(--accent-light);
+    }
+
+    .table thead th {
+        color: var(--accent);
+        font-weight: 700;
+        border: none;
+        padding: 14px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
+    }
+
+    .table tbody td {
+        padding: 14px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-dark);
+        font-weight: 500;
+        vertical-align: middle;
+    }
+
+    .table tbody tr:hover {
+        background: var(--accent-light);
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .product-image-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .product-image-cell img {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+    }
+
+    .product-image-cell .placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #e0e7ff 0%, #f5d4ff 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .product-info h6 {
+        font-weight: 700;
+        color: var(--text-dark);
+        margin: 0 0 2px 0;
+        font-size: 0.95rem;
+    }
+
+    .product-info .sku {
+        color: var(--text-light);
+        font-size: 0.8rem;
+        margin: 0;
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+        border-radius: 10px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        letter-spacing: 0.3px;
+        border: none;
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, var(--accent) 0%, #1e40af 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-primary-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        color: white;
+    }
+
+    .btn-outline-primary-custom {
+        color: var(--accent);
+        border: 2px solid var(--border-color);
+        background: white;
+    }
+
+    .btn-outline-primary-custom:hover {
+        background: var(--accent-light);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .btn-accent {
+        background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-accent:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+
+    .btn-outline-danger {
+        color: #ef4444;
+        border: 2px solid #fee2e2;
+        background: white;
+    }
+
+    .btn-outline-danger:hover {
+        background: #fee2e2;
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    /* ===== Order Summary ===== */
+    .order-summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 500;
+    }
+
+    .order-summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .order-summary-row.grand-total {
+        border-top: 2px solid var(--border-color);
+        border-bottom: none;
+        padding-top: 12px;
+        margin-top: 12px;
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: var(--accent);
+    }
+
+    /* ===== Badge ===== */
+    .badge {
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.3px;
+    }
+
+    .badge.bg-success {
+        background: linear-gradient(135deg, var(--success-color), #059669) !important;
+        color: white;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+    }
+
+    .badge.bg-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        color: white;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+    }
+
+    /* ===== Modals ===== */
+    .modal-header {
+        border-bottom: 1px solid var(--border-color);
+        background: var(--accent-light);
+    }
+
+    .modal-title {
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+
+    .modal-body {
+        color: var(--text-dark);
+    }
+
+    .form-select,
+    .form-control {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-weight: 500;
+    }
+
+    .form-select:focus,
+    .form-control:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 992px) {
+        .order-timeline {
+            padding-left: 35px;
+        }
+
+        .timeline-step-icon {
+            left: -33px;
+        }
+
+        .timeline-step.current .timeline-step-icon {
+            left: -35px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.9rem;
+        }
+
+        .table tbody td,
+        .table thead th {
+            padding: 10px;
+        }
+
+        .btn-group {
+            flex-wrap: wrap;
+        }
+
+        .product-image-cell img,
+        .product-image-cell .placeholder {
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Status Timeline -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Order Status</h5>
+                    
+                    <div class="order-timeline">
+                        {% with timeline_steps=order.get_timeline_steps %}
+                        {% for step in timeline_steps %}
+                        <div class="timeline-step {% if step.completed %}completed{% elif step.current %}current{% endif %}">
+                            <div class="timeline-step-icon">
+                                <i class="{{ step.icon }}"></i>
+                            </div>
+                            <div class="timeline-step-content">
+                                <h6>{{ step.title }}</h6>
+                                <p class="text-muted mb-0">{{ step.description }}</p>
+                                {% if step.date %}
+                                <small class="text-muted">{{ step.date|date:"M d, Y H:i" }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endwith %}
+                    </div>
+                    
+                    {% if order.tracking_number %}
+                    <div class="mt-4">
+                        <h6>Tracking Information</h6>
+                        <p class="mb-1">
+                            <strong>Tracking Number:</strong> {{ order.tracking_number }}
+                        </p>
+                        {% if order.carrier %}
+                        <p class="mb-0">
+                            <strong>Carrier:</strong> {{ order.carrier }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Order Items</h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order_items %}
+                                <tr>
+                                    <td>
+                                        <div class="product-image-cell">
+                                            {% if item.product_data and item.product_data.image %}
+                                                <img src="{{ item.product_data.image }}" 
+                                                     alt="{{ item.product_name }}"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="placeholder" style="display: none;">📷</div>
+                                            {% elif item.product and item.product.image %}
+                                                <img src="{{ item.product.image.url }}" 
+                                                     alt="{{ item.product_name }}"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="placeholder" style="display: none;">📷</div>
+                                            {% else %}
+                                                <div class="placeholder">📷</div>
+                                            {% endif %}
+                                            <div class="product-info">
+                                                <h6>{{ item.product_name }}</h6>
+                                                <p class="sku">SKU: {{ item.product_sku }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${{ item.unit_price|floatformat:2 }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ item.total_price|floatformat:2 }}</td>
+                                    <td>
+                                        {% if can_return and order.status == 'delivered' %}
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#returnModal{{ item.id }}">
+                                            Return
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Return Modal -->
+                                <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Request Return</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form method="post" action="{% url 'orders:create_return_request' order.order_number item.id %}">
+                                                {% csrf_token %}
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Reason for Return</label>
+                                                        <select name="reason" class="form-select" required>
+                                                            <option value="">Select a reason</option>
+                                                            <option value="defective">Defective Product</option>
+                                                            <option value="wrong_item">Wrong Item Received</option>
+                                                            <option value="not_as_described">Not as Described</option>
+                                                            <option value="changed_mind">Changed Mind</option>
+                                                            <option value="damaged">Damaged During Shipping</option>
+                                                            <option value="other">Other</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Description</label>
+                                                        <textarea name="description" class="form-control" rows="3" 
+                                                                  placeholder="Please provide details about your return request..." required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-primary-custom">Submit Request</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Order Summary</h5>
+                    
+                    <div class="mb-3">
+                        <strong style="color: var(--text-dark);">Order Number</strong>
+                        <p class="mb-0" style="color: var(--accent); font-weight: 700; font-size: 1.1rem;">{{ order.order_number }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong style="color: var(--text-dark);">Order Date</strong>
+                        <p class="mb-0" style="color: var(--text-light);">{{ order.created_at|date:"M d, Y" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong style="color: var(--text-dark);">Payment Method</strong>
+                        <p class="mb-0" style="color: var(--text-light);">{{ order.payment_method|title }}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <strong style="color: var(--text-dark);">Payment Status</strong>
+                        <span class="badge {% if order.payment_status == 'paid' %}bg-success{% else %}bg-warning{% endif %}" style="display: inline-block;">
+                            {{ order.get_payment_status_display }}
+                        </span>
+                    </div>
+                    
+                    <hr style="border-color: var(--border-color);">
+                    
+                    <div class="order-summary-row">
+                        <span>Subtotal</span>
+                        <span>${{ order.subtotal|floatformat:2 }}</span>
+                    </div>
+                    
+                    <div class="order-summary-row">
+                        <span>Shipping</span>
+                        <span>${{ order.shipping_cost|floatformat:2 }}</span>
+                    </div>
+                    
+                    <div class="order-summary-row">
+                        <span>Tax</span>
+                        <span>${{ order.tax_amount|floatformat:2 }}</span>
+                    </div>
+                    
+                    {% if order.discount_amount > 0 %}
+                    <div class="order-summary-row" style="color: var(--success-color);">
+                        <span>Discount</span>
+                        <span>-${{ order.discount_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="order-summary-row grand-total">
+                        <span>Total</span>
+                        <span>${{ order.total_amount|floatformat:2 }}</span>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{% url 'orders:download_invoice' order.order_number %}" class="btn btn-outline-primary-custom">
+                            <i class="fas fa-download me-2"></i>Download Invoice
+                        </a>
+                        
+                        {% if can_cancel %}
+                        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="fas fa-times me-2"></i>Cancel Order
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{% url 'orders:track_order' order.order_number %}" class="btn btn-accent">
+                            <i class="fas fa-truck me-2"></i>Track Order
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shipping Address -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Shipping Address</h5>
+                    
+                    <div style="line-height: 1.8; color: var(--text-dark);">
+                        <p class="mb-1">{{ order.shipping_address }}</p>
+                        <p class="mb-1">
+                            {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_zip_code }}
+                        </p>
+                        <p class="mb-1">{{ order.shipping_country }}</p>
+                        <p class="mb-0">
+                            <i class="fas fa-phone me-2" style="color: var(--accent);"></i>{{ order.shipping_phone }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Order Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cancel Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this order?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep Order</button>
+                <a href="{% url 'orders:cancel_order' order.order_number %}" class="btn btn-danger">Yes, Cancel Order</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

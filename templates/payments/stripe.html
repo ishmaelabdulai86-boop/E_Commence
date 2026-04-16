@@ -1,0 +1,179 @@
+<!-- payments/templates/payments/stripe.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Card Payment - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<!-- Stripe Elements CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stripe/stripe-js@1.54.0">
+<style>
+    .StripeElement {
+        box-sizing: border-box;
+        height: 40px;
+        padding: 10px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: white;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .StripeElement--focus {
+        border-color: #80bdff;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    .StripeElement--invalid {
+        border-color: #dc3545;
+    }
+    .StripeElement--webkit-autofill {
+        background-color: #fefde5 !important;
+    }
+    .payment-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Complete Your Payment</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Order Summary -->
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">Order Summary</h5>
+                        <p class="mb-1"><strong>Order #:</strong> {{ order.order_number }}</p>
+                        <p class="mb-1"><strong>Amount:</strong> ${{ order.total_amount|floatformat:2 }}</p>
+                        <p class="mb-0"><strong>Date:</strong> {{ order.created_at|date:"F j, Y" }}</p>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <div class="payment-container">
+                        <form id="payment-form">
+                            <div class="mb-3">
+                                <label for="card-element" class="form-label">Credit or debit card</label>
+                                <div id="card-element" class="form-control">
+                                    <!-- Stripe Card Element will be inserted here -->
+                                </div>
+                                <div id="card-errors" class="text-danger mt-2" role="alert"></div>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="save-card">
+                                <label class="form-check-label" for="save-card">
+                                    Save card for future payments
+                                </label>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submit-button">
+                                    Pay ${{ order.total_amount|floatformat:2 }}
+                                </button>
+                                <a href="{% url 'checkout' %}" class="btn btn-outline-secondary">
+                                    Cancel Payment
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Payment Gateway Info -->
+                    <div class="mt-4 text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-lock me-1"></i>
+                            Your payment is secured by Stripe. We never store your card details.
+                        </small>
+                        <div class="mt-2">
+                            <img src="{% static 'images/stripe-badge.png' %}" alt="Stripe Secure" height="30" class="me-2">
+                            <img src="{% static 'images/pci-compliant.png' %}" alt="PCI Compliant" height="30">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Stripe.js -->
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    const stripe = Stripe('{{ stripe_public_key }}');
+    const elements = stripe.elements();
+    
+    // Create card element
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#dc3545'
+            }
+        }
+    });
+    
+    cardElement.mount('#card-element');
+    
+    // Handle real-time validation errors
+    cardElement.on('change', function(event) {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+    
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    const submitButton = document.getElementById('submit-button');
+    
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        // Disable submit button
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        
+        try {
+            const {paymentIntent, error} = await stripe.confirmCardPayment(
+                '{{ client_secret }}',
+                {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: '{{ request.user.get_full_name|default:request.user.username }}',
+                            email: '{{ request.user.email }}',
+                        }
+                    }
+                }
+            );
+            
+            if (error) {
+                // Show error
+                document.getElementById('card-errors').textContent = error.message;
+                submitButton.disabled = false;
+                submitButton.textContent = 'Pay ${{ order.total_amount|floatformat:2 }}';
+            } else if (paymentIntent.status === 'succeeded') {
+                // Payment successful
+                window.location.href = "{% url 'payment_success' payment.payment_id %}";
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('card-errors').textContent = 'An unexpected error occurred.';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Pay ${{ order.total_amount|floatformat:2 }}';
+        }
+    });
+</script>
+{% endblock %}

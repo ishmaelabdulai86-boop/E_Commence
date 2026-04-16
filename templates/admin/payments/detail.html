@@ -1,0 +1,278 @@
+{% extends 'admin/admin_base.html' %}
+{% load static %}
+
+{% block title %}Payment Details - {{ payment.payment_id }} - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                Payment: {{ payment.payment_id }}
+                <small class="text-muted fs-6">Created on {{ payment.created_at|date:"F d, Y" }}</small>
+            </h1>
+        </div>
+        <div>
+            <a href="{% url 'payments:admin_payment_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Payments
+            </a>
+            {% if payment.is_refundable %}
+            <a href="{% url 'payments:admin_payment_refund' payment.payment_id %}" class="btn btn-warning">
+                <i class="fas fa-undo me-2"></i> Refund
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Payment Details -->
+        <div class="col-lg-8">
+            <!-- Payment Status Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Payment Information</h6>
+                    <div>
+                        <span class="badge bg-{% if payment.status == 'completed' %}success
+                                       {% elif payment.status == 'pending' %}warning
+                                       {% elif payment.status == 'failed' %}danger
+                                       {% elif payment.status == 'refunded' %}secondary
+                                       {% else %}info{% endif %} fs-6">
+                            {{ payment.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Payment ID</label>
+                            <div class="form-control-plaintext">
+                                <code>{{ payment.payment_id }}</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Payment Method</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-info">{{ payment.get_payment_method_display }}</span>
+                                <span class="ms-2">via {{ payment.payment_gateway|title }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Amount</label>
+                            <div class="form-control-plaintext h4 text-primary">
+                                ${{ payment.amount|floatformat:2 }}
+                                <small class="text-muted">{{ payment.currency }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Transaction ID</label>
+                            <div class="form-control-plaintext">
+                                {% if payment.gateway_transaction_id %}
+                                <code>{{ payment.gateway_transaction_id }}</code>
+                                {% else %}
+                                <span class="text-muted">Not available</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Customer Information -->
+                    <hr>
+                    <h6 class="mb-3">Customer Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Customer</label>
+                            <div class="form-control-plaintext">
+                                {% if payment.user %}
+                                <strong>{{ payment.user.get_full_name|default:payment.user.username }}</strong>
+                                <br>
+                                <a href="mailto:{{ payment.user.email }}">{{ payment.user.email }}</a>
+                                {% else %}
+                                {{ payment.customer_email }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Phone</label>
+                            <div class="form-control-plaintext">
+                                {{ payment.customer_phone|default:"Not provided" }}
+                            </div>
+                        </div>
+                        {% if payment.billing_address %}
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label text-muted">Billing Address</label>
+                            <div class="form-control-plaintext">{{ payment.billing_address }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Dates -->
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-muted">Created</label>
+                            <div class="form-control-plaintext">{{ payment.created_at|date:"F d, Y H:i" }}</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-muted">Updated</label>
+                            <div class="form-control-plaintext">{{ payment.updated_at|date:"F d, Y H:i" }}</div>
+                        </div>
+                        {% if payment.paid_at %}
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-muted">Paid At</label>
+                            <div class="form-control-plaintext">{{ payment.paid_at|date:"F d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Information -->
+            {% if payment.order %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Order Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Order Number</label>
+                            <div class="form-control-plaintext">
+                                <a href="{% url 'orders:admin_order_detail' payment.order.order_number %}" 
+                                   class="text-decoration-none">
+                                    {{ payment.order.order_number }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Order Status</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-{% if payment.order.status == 'delivered' %}success
+                                               {% elif payment.order.status == 'shipped' %}info
+                                               {% elif payment.order.status == 'processing' %}primary
+                                               {% elif payment.order.status == 'pending' %}warning
+                                               {% else %}secondary{% endif %}">
+                                    {{ payment.order.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Order Total</label>
+                            <div class="form-control-plaintext">${{ payment.order.total_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Order Date</label>
+                            <div class="form-control-plaintext">{{ payment.order.created_at|date:"F d, Y H:i" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Gateway Response -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Gateway Response</h6>
+                </div>
+                <div class="card-body">
+                    {% if payment.gateway_response %}
+                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; max-height: 300px; overflow-y: auto;">
+{{ payment.gateway_response|pprint }}
+                    </pre>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No gateway response data</p>
+                    {% endif %}
+                    
+                    {% if payment.gateway_error %}
+                    <div class="alert alert-danger mt-3">
+                        <strong>Gateway Error:</strong>
+                        <pre class="mt-2">{{ payment.gateway_error }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Actions & Refunds -->
+        <div class="col-lg-4">
+            <!-- Actions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'payments:admin_payment_list' %}?q={{ payment.payment_id }}" class="btn btn-outline-primary">
+                            <i class="fas fa-search me-2"></i> Search Similar
+                        </a>
+                        {% if payment.order %}
+                        <a href="{% url 'orders:admin_order_detail' payment.order.order_number %}" class="btn btn-info">
+                            <i class="fas fa-external-link-alt me-2"></i> View Order
+                        </a>
+                        {% endif %}
+                        {% if payment.user %}
+                        <a href="mailto:{{ payment.user.email }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-envelope me-2"></i> Email Customer
+                        </a>
+                        {% endif %}
+                        {% if payment.is_refundable %}
+                        <a href="{% url 'payments:admin_payment_refund' payment.payment_id %}" class="btn btn-warning">
+                            <i class="fas fa-undo me-2"></i> Process Refund
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refunds History -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Refund History</h6>
+                    {% if refunds %}
+                    <span class="badge bg-primary">{{ refunds.count }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if refunds %}
+                    <div class="list-group list-group-flush">
+                        {% for refund in refunds %}
+                        <div class="list-group-item border-0 px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong>{{ refund.refund_id }}</strong>
+                                <span class="badge bg-{% if refund.status == 'completed' %}success
+                                               {% elif refund.status == 'pending' %}warning
+                                               {% elif refund.status == 'failed' %}danger
+                                               {% else %}info{% endif %}">
+                                    {{ refund.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>${{ refund.amount|floatformat:2 }} {{ refund.currency }}</span>
+                                <small class="text-muted">{{ refund.requested_at|date:"M d" }}</small>
+                            </div>
+                            {% if refund.description %}
+                            <small class="text-muted d-block mt-1">{{ refund.description|truncatechars:50 }}</small>
+                            {% endif %}
+                            <a href="{% url 'admin_refund_detail' refund.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                                View Details
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No refunds processed</p>
+                    {% endif %}
+                    
+                    {% if payment.is_refundable %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'payments:admin_payment_refund' payment.payment_id %}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-plus me-1"></i> New Refund
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+<!-- payments/templates/payments/momo.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mobile Money Payment - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Mobile Money Payment</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Order Summary -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Order Summary</h5>
+                        <p class="mb-1"><strong>Order #:</strong> {{ order.order_number }}</p>
+                        <p class="mb-1"><strong>Amount:</strong> {{ currency }} {{ order.total_amount|floatformat:2 }}</p>
+                        <p class="mb-0"><strong>Provider:</strong> {{ provider|upper }} Mobile Money</p>
+                    </div>
+
+                    <!-- Payment Instructions -->
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading"><i class="fas fa-mobile-alt me-2"></i>Payment Instructions</h6>
+                        <ol class="mb-0">
+                            <li>Ensure you have sufficient funds in your {{ provider|upper }} Mobile Money account</li>
+                            <li>You will receive a payment request on your phone: <strong>{{ phone_number }}</strong></li>
+                            <li>Enter your Mobile Money PIN to authorize the payment</li>
+                            <li>Wait for confirmation message</li>
+                        </ol>
+                    </div>
+
+                    <!-- Payment Status -->
+                    <div class="text-center mb-4">
+                        <div class="spinner-border text-primary mb-3" role="status" id="payment-spinner">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <h5 id="payment-status">Waiting for payment confirmation...</h5>
+                        <p class="text-muted" id="status-message">
+                            Please check your phone and authorize the payment request.
+                        </p>
+                    </div>
+
+                    <!-- Network Logos -->
+                    <div class="text-center mb-4">
+                        {% if provider == 'mtn' %}
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/MTN_Logo.svg/320px-MTN_Logo.svg.png" 
+                             alt="MTN" height="40" class="me-3">
+                        {% elif provider == 'vodafone' %}
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Vodafone_2017_logo.svg/320px-Vodafone_2017_logo.svg.png" 
+                             alt="Vodafone" height="40" class="me-3">
+                        {% elif provider == 'airtel' %}
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Airtel_Logo.svg/320px-Airtel_Logo.svg.png" 
+                             alt="Airtel" height="40" class="me-3">
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <!-- Check Payment Status -->
+                        <button type="button" class="btn btn-primary" id="check-status">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Check Payment Status
+                        </button>
+
+                        <!-- Manual Confirmation (for testing) -->
+                        <form method="post" action="{% url 'payment_success' payment.payment_id %}" 
+                              class="d-grid gap-2 mt-2" id="manual-confirm">
+                            {% csrf_token %}
+                            <input type="hidden" name="simulate" value="momo_success">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Simulate Successful Payment (Testing)
+                            </button>
+                        </form>
+
+                        <a href="{% url 'checkout' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancel Payment
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="fas fa-question-circle me-2"></i>Need Help?</h6>
+                    <ul class="list-unstyled text-muted small">
+                        <li><i class="fas fa-phone me-2"></i>Contact {{ provider|upper }} Customer Care: *135#</li>
+                        <li><i class="fas fa-exclamation-triangle me-2"></i>Ensure you have USSD services enabled</li>
+                        <li><i class="fas fa-clock me-2"></i>Payment may take 1-2 minutes to process</li>
+                        <li><i class="fas fa-envelope me-2"></i>You will receive SMS confirmation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Function to check payment status
+    function checkPaymentStatus() {
+        const spinner = document.getElementById('payment-spinner');
+        const statusText = document.getElementById('payment-status');
+        const statusMessage = document.getElementById('status-message');
+        
+        // Simulate API call (in production, call your backend)
+        fetch("{% url 'verify_payment' payment.payment_id %}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.is_successful) {
+                    // Payment successful
+                    spinner.className = 'spinner-grow text-success mb-3';
+                    statusText.textContent = 'Payment Successful!';
+                    statusText.className = 'text-success';
+                    statusMessage.textContent = 'Your payment has been confirmed. Redirecting...';
+                    
+                    // Redirect to success page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = "{% url 'payment_success' payment.payment_id %}";
+                    }, 2000);
+                } else {
+                    // Still processing
+                    statusMessage.textContent = 'Still waiting for payment confirmation...';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking status:', error);
+                statusMessage.textContent = 'Error checking status. Please try again.';
+            });
+    }
+    
+    // Check status button
+    document.getElementById('check-status').addEventListener('click', checkPaymentStatus);
+    
+    // Auto-check every 10 seconds
+    setInterval(checkPaymentStatus, 10000);
+    
+    // Initial check after 5 seconds
+    setTimeout(checkPaymentStatus, 5000);
+</script>
+{% endblock %}

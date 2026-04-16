@@ -1,0 +1,1284 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Orders - TechStore{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section with Gradient Background -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <h1 class="dashboard-title">My <span class="text-gradient">Orders</span></h1>
+                    <p class="subtitle mb-0">Track and manage all your purchases</p>
+                </div>
+                <div class="role-badge">{{ total_orders|default:"0" }} Orders</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="sidebar-wrapper">
+                    <!-- User Profile Card -->
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                {% if user.profile_picture_url %}
+                                    <img src="{{ user.profile_picture_url }}" 
+                                        alt="Profile" class="avatar-image">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <h5 class="profile-name">{{ user.get_full_name|default:user.username }}</h5>
+                            <p class="profile-email">{{ user.email }}</p>
+                            <div class="profile-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Member since {{ user.date_joined|date:"Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="sidebar-menu">
+                        <a href="{% url 'users:profile' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-home"></i></div>
+                            <span>Dashboard</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'orders:order_list' %}" class="menu-item active">
+                            <div class="menu-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <span>My Orders</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'products:wishlist' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-heart"></i></div>
+                            <span>Wishlist</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:profile_edit' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-user-circle"></i></div>
+                            <span>Edit Profile</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:password_change' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-key"></i></div>
+                            <span>Change Password</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'notifications:notification_list' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-bell"></i></div>
+                            <span>Notifications</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <hr>
+                        <a href="{% url 'users:logout' %}" class="menu-item menu-item-logout">
+                            <div class="menu-icon"><i class="fas fa-sign-out-alt"></i></div>
+                            <span>Logout</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Stats Grid -->
+                <div class="row g-3 mb-5">
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-primary">
+                            <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Total Orders</p>
+                                <h3 class="stat-value">{{ total_orders|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-success">
+                            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Delivered</p>
+                                <h3 class="stat-value">{{ delivered_count|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-warning">
+                            <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Processing</p>
+                                <h3 class="stat-value">{{ processing_count|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-3">
+                        <div class="stat-card stat-card-info">
+                            <div class="stat-icon"><i class="fas fa-truck"></i></div>
+                            <div class="stat-content">
+                                <p class="stat-label">Shipped</p>
+                                <h3 class="stat-value">{{ shipped_count|default:"0" }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters Section -->
+                <div class="filter-card mb-4">
+                    <div class="filter-header">
+                        <h5 class="filter-title"><i class="fas fa-filter me-2"></i>Filter Orders</h5>
+                    </div>
+                    <div class="filter-body">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label class="filter-label">Status</label>
+                                <select class="filter-select" id="statusFilter">
+                                    <option value="">All Orders</option>
+                                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="processing" {% if request.GET.status == 'processing' %}selected{% endif %}>Processing</option>
+                                    <option value="shipped" {% if request.GET.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                    <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Sort By</label>
+                                <select class="filter-select" id="sortFilter">
+                                    <option value="latest" {% if request.GET.sort == 'latest' %}selected{% endif %}>Latest First</option>
+                                    <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+                                    <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                                    <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                                </select>
+                            </div>
+                            <div class="filter-group filter-action">
+                                <button class="btn-apply-filter" onclick="applyFilters()">
+                                    <i class="fas fa-search me-2"></i>Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                <div class="orders-card">
+                    <div class="orders-header-card">
+                        <h5 class="orders-title"><i class="fas fa-list me-2"></i>Order History</h5>
+                    </div>
+                    <div class="orders-body">
+                        {% if orders %}
+                        <div class="orders-list">
+                            {% for order in orders %}
+                            <div class="order-item-wrapper" data-order-id="{{ order.id }}" data-order-number="{{ order.order_number }}">
+                                <div class="order-row" onclick="toggleOrderDetails('{{ order.id }}', '{{ order.order_number }}')">
+                                    <div class="order-col order-number-col">
+                                        <span class="order-number-badge">{{ order.order_number }}</span>
+                                    </div>
+                                    <div class="order-col order-date-col">
+                                        <p class="col-label">Date</p>
+                                        <p class="col-value">{{ order.created_at|date:"M d, Y" }}</p>
+                                    </div>
+                                    <div class="order-col order-items-col">
+                                        <p class="col-label">Items</p>
+                                        <p class="col-value">{{ order.items.count }} item{{ order.items.count|pluralize }}</p>
+                                    </div>
+                                    <div class="order-col order-total-col">
+                                        <p class="col-label">Total</p>
+                                        <p class="col-value price">${{ order.total_amount|floatformat:2 }}</p>
+                                    </div>
+                                    <div class="order-col order-status-col">
+                                        <p class="col-label">Status</p>
+                                        <span class="status-badge status-{{ order.status }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </div>
+                                    <div class="order-col order-actions-col">
+                                        <div class="action-buttons">
+                                            <button class="action-btn action-view" onclick="event.stopPropagation(); toggleOrderDetails('{{ order.id }}', '{{ order.order_number }}')" title="View Order Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{% url 'orders:track_order' order.order_number %}" 
+                                               class="action-btn action-track" onclick="event.stopPropagation();" title="Track Order">
+                                                <i class="fas fa-truck"></i>
+                                            </a>
+                                            {% if order.status == 'pending' or order.status == 'processing' %}
+                                            <button type="button" class="action-btn action-cancel" 
+                                                    onclick="event.stopPropagation(); cancelOrder('{{ order.order_number }}')" title="Cancel Order">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Order Details Expandable Section -->
+                                <div class="order-details-panel" id="order-details-{{ order.id }}" style="display: none;">
+                                    <div class="order-details-content">
+                                        <div class="details-content" id="content-{{ order.id }}">
+                                            <div class="loading-placeholder">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-2" style="color: #6366f1;"></i>
+                                                <p>Loading order details...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if orders.has_other_pages %}
+                        <div class="pagination-wrapper">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination-list">
+                                    {% if orders.has_previous %}
+                                    <li class="pagination-item">
+                                        <a class="pagination-link" href="?page={{ orders.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                            <i class="fas fa-chevron-left me-1"></i>Previous
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in orders.paginator.page_range %}
+                                        {% if orders.number == i %}
+                                        <li class="pagination-item active">
+                                            <span class="pagination-link">{{ i }}</span>
+                                        </li>
+                                        {% elif i > orders.number|add:'-3' and i < orders.number|add:'3' %}
+                                        <li class="pagination-item">
+                                            <a class="pagination-link" href="?page={{ i }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ i }}</a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if orders.has_next %}
+                                    <li class="pagination-item">
+                                        <a class="pagination-link" href="?page={{ orders.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                                            Next<i class="fas fa-chevron-right ms-1"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                        
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <h5 class="empty-title">No Orders Found</h5>
+                            <p class="empty-text">You haven't placed any orders yet. Start shopping to create your first order!</p>
+                            <a href="{% url 'products:product_list' %}" class="btn-start-shopping">
+                                <i class="fas fa-shopping-cart me-2"></i>Start Shopping Now
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --light: #f9fafb;
+        --border: #e5e7eb;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-container {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .text-gradient {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        position: sticky;
+        top: 20px;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+
+    .profile-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        height: 80px;
+        position: relative;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        padding: 3px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .profile-info {
+        text-align: center;
+        padding: 60px 1rem 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-email {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .meta-item {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item i {
+        margin-right: 0.5rem;
+    }
+
+    /* Sidebar Menu */
+    .sidebar-menu {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: var(--text);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        font-weight: 500;
+    }
+
+    .menu-item:hover {
+        background: var(--light);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item-logout {
+        color: var(--danger);
+    }
+
+    .menu-item-logout:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .menu-icon {
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        border-top: 4px solid transparent;
+    }
+
+    .stat-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+    }
+
+    .stat-card-primary { border-top-color: var(--primary); }
+    .stat-card-success { border-top-color: var(--success); }
+    .stat-card-warning { border-top-color: var(--warning); }
+    .stat-card-info { border-top-color: var(--info); }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .stat-card-primary .stat-icon { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+    .stat-card-success .stat-icon { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .stat-card-warning .stat-icon { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+    .stat-card-info .stat-icon { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+
+    .stat-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+    }
+
+    /* Filter Card */
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .filter-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--light);
+    }
+
+    .filter-title {
+        color: var(--text);
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .filter-body {
+        padding: 1.5rem;
+    }
+
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group.filter-action {
+        justify-content: flex-end;
+    }
+
+    .filter-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-select {
+        padding: 0.65rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: var(--text);
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .filter-select:hover { border-color: var(--primary); }
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .btn-apply-filter {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border: none;
+        padding: 0.65rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .btn-apply-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Orders List Card */
+    .orders-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-top: 1.5rem;
+    }
+
+    .orders-header-card {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--light);
+    }
+
+    .orders-title {
+        color: var(--text);
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .orders-body {
+        padding: 1.5rem;
+    }
+
+    /* Orders List */
+    .orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .order-item-wrapper {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .order-item-wrapper:hover {
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+    }
+
+    .order-row {
+        display: grid;
+        grid-template-columns: 130px 1fr 1fr 1fr 1fr 100px;
+        gap: 1rem;
+        align-items: center;
+        padding: 1rem;
+        background: var(--light);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .order-row:hover {
+        background: white;
+    }
+
+    .order-number-badge {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-align: center;
+        display: inline-block;
+    }
+
+    .col-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .col-value {
+        color: var(--text);
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .col-value.price {
+        color: var(--primary);
+        font-size: 1rem;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.35rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .status-delivered { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .status-shipped { background: rgba(59, 130, 246, 0.15); color: var(--info); }
+    .status-processing { background: rgba(99, 102, 241, 0.15); color: var(--primary); }
+    .status-pending { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+    .status-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .status-refunded { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .action-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 0.85rem;
+        background: white;
+    }
+
+    .action-view { color: var(--info); background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2); }
+    .action-view:hover { background: rgba(59, 130, 246, 0.15); border-color: var(--info); }
+
+    .action-track { color: var(--success); background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); }
+    .action-track:hover { background: rgba(16, 185, 129, 0.15); border-color: var(--success); }
+
+    .action-cancel { color: var(--danger); background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.2); }
+    .action-cancel:hover { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); }
+
+    /* Order Details Panel */
+    .order-details-panel {
+        border-top: 1px solid var(--border);
+        background: #fefefe;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .order-details-content {
+        padding: 1.5rem;
+    }
+
+    .loading-placeholder {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+
+    /* Order Items Table */
+    .order-items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .order-items-table th {
+        text-align: left;
+        padding: 0.75rem;
+        background: var(--light);
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--text);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .order-items-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+    }
+
+    .order-items-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .product-image-thumb {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    /* Order Summary */
+    .order-summary {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-label {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .summary-value {
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .summary-total {
+        font-size: 1.1rem;
+        color: var(--primary);
+    }
+
+    /* Shipping Info */
+    .shipping-info {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .shipping-info p {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .shipping-info p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Action Buttons inside details */
+    .details-action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .details-action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .details-action-btn.primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+    }
+
+    .details-action-btn.secondary {
+        background: var(--light);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .details-action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+
+    .details-action-btn.secondary:hover {
+        background: white;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Pagination */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .pagination-list {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .pagination-link {
+        padding: 0.5rem 0.875rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pagination-link:hover {
+        background: var(--light);
+        border-color: var(--primary);
+    }
+
+    .pagination-item.active .pagination-link {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border-color: transparent;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--text-muted);
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .empty-title {
+        color: var(--text);
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-text {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-start-shopping {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .btn-start-shopping:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .sidebar-wrapper { position: static; }
+        .order-row { grid-template-columns: 1fr; gap: 0.5rem; }
+        .order-number-col { text-align: center; }
+        .order-number-badge { display: inline-block; }
+        .col-label { min-width: 100px; }
+        .action-buttons { justify-content: flex-start; }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-title { font-size: 1.5rem; }
+        .role-badge { font-size: 0.75rem; padding: 0.35rem 1rem; }
+        .stat-card { padding: 1rem; }
+        .stat-value { font-size: 1.25rem; }
+        .filter-grid { grid-template-columns: 1fr; }
+    }
+</style>
+
+<script>
+    // Track open panels to close others
+    let openPanelId = null;
+    // Track which orders have been loaded
+    const loadedOrders = {};
+
+    function toggleOrderDetails(orderId, orderNumber) {
+        const panel = document.getElementById(`order-details-${orderId}`);
+        
+        // If clicking the same panel, close it
+        if (openPanelId === orderId) {
+            panel.style.display = 'none';
+            openPanelId = null;
+            return;
+        }
+        
+        // Close any open panel
+        if (openPanelId) {
+            const prevPanel = document.getElementById(`order-details-${openPanelId}`);
+            if (prevPanel) {
+                prevPanel.style.display = 'none';
+            }
+        }
+        
+        // Open the new panel
+        panel.style.display = 'block';
+        openPanelId = orderId;
+        
+        // If content hasn't been loaded yet, fetch it
+        if (!loadedOrders[orderId]) {
+            loadOrderDetails(orderId);
+        }
+    }
+    
+    function loadOrderDetails(orderId) {
+        const contentDiv = document.getElementById(`content-${orderId}`);
+        
+        // Fetch order details via AJAX
+        fetch(`/orders/api/order-details/${orderId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadedOrders[orderId] = true;
+            
+            if (data.success) {
+                contentDiv.innerHTML = renderOrderDetails(data.order);
+            } else {
+                contentDiv.innerHTML = `
+                    <div class="alert alert-danger" style="padding: 1rem; border-radius: 8px; background: #fee2e2; color: #dc2626; border: none;">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        ${data.error || 'Failed to load order details'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            contentDiv.innerHTML = `
+                <div class="alert alert-danger" style="padding: 1rem; border-radius: 8px; background: #fee2e2; color: #dc2626; border: none;">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Network error. Please try again.
+                </div>
+            `;
+        });
+    }
+    
+    function downloadInvoice(orderNumber) {
+        const link = document.createElement('a');
+        link.href = `/orders/${orderNumber}/invoice/`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    function renderOrderDetails(order) {
+        // Render order items
+        let itemsHtml = '';
+        if (order.items && order.items.length > 0) {
+            order.items.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <img src="${item.image_url || 'https://via.placeholder.com/50'}" 
+                                     alt="${escapeHtml(item.product_name)}" 
+                                     class="product-image-thumb"
+                                     onerror="this.src='https://via.placeholder.com/50'">
+                                <div>
+                                    <strong>${escapeHtml(item.product_name)}</strong>
+                                    <br>
+                                    <small class="text-muted">SKU: ${item.product_sku}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <td>${item.quantity}</div>
+                        <td>$${parseFloat(item.unit_price).toFixed(2)}</div>
+                        <td class="text-end">$${parseFloat(item.total_price).toFixed(2)}</div>
+                    </div>
+                `;
+            });
+        } else {
+            itemsHtml = `
+                <tr>
+                    <td colspan="4" class="text-center">No items found</div>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="row">
+                <div class="col-md-8">
+                    <h6 class="mb-3"><i class="fas fa-box me-2"></i>Order Items</h6>
+                    <div class="table-responsive">
+                        <table class="order-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                </div>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="mb-3"><i class="fas fa-receipt me-2"></i>Order Summary</h6>
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal</span>
+                            <span class="summary-value">$${parseFloat(order.subtotal).toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Shipping</span>
+                            <span class="summary-value">$${parseFloat(order.shipping_cost).toFixed(2)}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Tax</span>
+                            <span class="summary-value">$${parseFloat(order.tax_amount).toFixed(2)}</span>
+                        </div>
+                        ${order.discount_amount > 0 ? `
+                        <div class="summary-row">
+                            <span class="summary-label">Discount</span>
+                            <span class="summary-value text-danger">-$${parseFloat(order.discount_amount).toFixed(2)}</span>
+                        </div>
+                        ` : ''}
+                        <div class="summary-row">
+                            <span class="summary-label fw-bold">Total</span>
+                            <span class="summary-value summary-total fw-bold">$${parseFloat(order.total_amount).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3 mt-4"><i class="fas fa-truck me-2"></i>Shipping Information</h6>
+                    <div class="shipping-info">
+                        <p><strong>${escapeHtml(order.shipping_name || order.customer_name || 'N/A')}</strong></p>
+                        <p>${escapeHtml(order.shipping_address || 'N/A')}</p>
+                        <p>${escapeHtml(order.shipping_city || '')} ${escapeHtml(order.shipping_state || '')} ${escapeHtml(order.shipping_zip_code || '')}</p>
+                        <p>${escapeHtml(order.shipping_country || 'N/A')}</p>
+                        <p><i class="fas fa-phone me-2"></i>${escapeHtml(order.shipping_phone || 'N/A')}</p>
+                    </div>
+                    
+                    ${order.tracking_number ? `
+                    <h6 class="mb-3 mt-4"><i class="fas fa-map-marker-alt me-2"></i>Tracking Information</h6>
+                    <div class="shipping-info">
+                        <p><strong>Tracking Number:</strong> ${escapeHtml(order.tracking_number)}</p>
+                        ${order.carrier ? `<p><strong>Carrier:</strong> ${escapeHtml(order.carrier)}</p>` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    <div class="details-action-buttons">
+                        <button onclick="downloadInvoice('${order.order_number}')" class="details-action-btn primary">
+                            <i class="fas fa-download me-1"></i>Download Invoice
+                        </button>
+                        <a href="/orders/${order.order_number}/track/" class="details-action-btn secondary">
+                            <i class="fas fa-truck me-1"></i>Track Order
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function applyFilters() {
+        const status = document.getElementById('statusFilter').value;
+        const sort = document.getElementById('sortFilter').value;
+        
+        let url = new URL(window.location.href);
+        if (status) url.searchParams.set('status', status);
+        else url.searchParams.delete('status');
+        
+        if (sort) url.searchParams.set('sort', sort);
+        else url.searchParams.delete('sort');
+        
+        window.location.href = url.toString();
+    }
+
+    function cancelOrder(orderNumber) {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            window.location.href = `/orders/${orderNumber}/cancel/`;
+        }
+    }
+
+    // Set filter values from URL on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const sort = urlParams.get('sort');
+        
+        if (status) {
+            const statusSelect = document.getElementById('statusFilter');
+            if (statusSelect) statusSelect.value = status;
+        }
+        if (sort) {
+            const sortSelect = document.getElementById('sortFilter');
+            if (sortSelect) sortSelect.value = sort;
+        }
+    });
+</script>
+{% endblock %}

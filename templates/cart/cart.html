@@ -1,0 +1,772 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - TechStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== Modern Color Palette ===== */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --primary-soft: rgba(102, 126, 234, 0.05);
+        --primary-border: rgba(102, 126, 234, 0.15);
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --bg-light: #f9fafb;
+    }
+
+    .container > h1 {
+        font-weight: 800;
+        color: var(--text-primary);
+        letter-spacing: -0.5px;
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .card {
+        border: 1px solid var(--primary-border);
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+    }
+
+    .card:hover {
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .card .card-body {
+        padding: 24px;
+    }
+
+    .card .card-title {
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        font-size: 1.25rem;
+    }
+
+    .cart-item-row {
+        border-bottom: 1px solid var(--primary-border) !important;
+        padding-bottom: 20px !important;
+        margin-bottom: 20px !important;
+        transition: all 0.3s ease;
+    }
+
+    .cart-item-row:hover {
+        background: var(--primary-soft);
+        border-radius: 10px;
+        padding: 16px 12px 20px 12px !important;
+    }
+
+    .cart-item-row .col-md-2 img {
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .cart-item-row .col-md-2 img:hover {
+        transform: scale(1.05);
+    }
+
+    .cart-item-row h6 {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .cart-item-row small {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .input-group-sm {
+        border: 1px solid var(--primary-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .input-group-sm .btn {
+        border: none;
+        background: white;
+        color: #667eea;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+
+    .input-group-sm .btn:hover {
+        background: var(--primary-soft);
+    }
+
+    .input-group-sm .form-control {
+        border: none;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .cart-item-row .h6 {
+        font-weight: 800;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+
+    .btn {
+        border-radius: 10px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        letter-spacing: 0.3px;
+    }
+
+    .btn-outline-primary-custom {
+        color: #667eea;
+        border: 2px solid var(--primary-border);
+        background: white;
+    }
+
+    .btn-outline-primary-custom:hover {
+        background: var(--primary-gradient);
+        border-color: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-danger {
+        background: #ef4444;
+        border: none;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-link {
+        color: #ef4444;
+        font-weight: 700;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-link:hover {
+        color: #dc2626;
+        transform: scale(1.1);
+    }
+
+    .btn-primary-custom {
+        background: var(--primary-gradient);
+        border: none;
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #5a52d4, #6d3a99);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .d-flex.justify-content-between {
+        padding: 12px 0;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .d-flex.justify-content-between strong {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .d-flex.justify-content-between .h5 {
+        font-weight: 800;
+        color: #667eea;
+    }
+
+    .small.text-muted {
+        color: var(--text-secondary) !important;
+        font-weight: 500;
+    }
+
+    .btn-accent {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        font-weight: 700;
+    }
+
+    .btn-accent:hover {
+        background: linear-gradient(135deg, #5a52d4, #6d3a99);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .text-center i {
+        color: var(--text-secondary);
+        opacity: 0.3;
+    }
+
+    .text-center h3 {
+        color: var(--text-primary);
+        font-weight: 800;
+        margin-top: 16px;
+    }
+
+    .cart-item-removing {
+        opacity: 0;
+        transform: translateX(100px);
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .container > h1 {
+            font-size: 1.8rem;
+        }
+        .card .card-body {
+            padding: 16px;
+        }
+        .cart-item-row {
+            gap: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Shopping Cart</h1>
+    
+    <div id="cart-content">
+        {% if cart_items %}
+        <div class="row">
+            <!-- Cart Items -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body" id="cart-items-container">
+                        {% for item in cart_items %}
+                        <div class="row align-items-center cart-item-row" id="item-{{ item.id }}" data-item-id="{{ item.id }}" data-price="{{ item.product.discount_price|default:item.product.price|floatformat:2 }}">
+                            <div class="col-md-2">
+                                {% if item.product.primary_image_url %}
+                                <img src="{{ item.product.primary_image_url }}" alt="{{ item.product.name }}" class="img-fluid rounded" style="max-height: 100px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded bg-light d-flex align-items-center justify-content-center" style="height: 100px;">
+                                    <i class="fas fa-box text-muted fa-2x"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-5">
+                                <h6 class="mb-1">{{ item.product.name }}</h6>
+                                <small class="text-muted">SKU: {{ item.product.sku }}</small>
+                                <div class="mt-1">
+                                    <small class="text-primary-custom">Unit Price: ${{ item.product.discount_price|default:item.product.price|floatformat:2 }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="input-group input-group-sm">
+                                    <button class="btn btn-outline-secondary" onclick="updateCartItem('{{ item.id }}', 'decrease', this)">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="text" class="form-control text-center" value="{{ item.quantity }}" readonly id="qty-{{ item.id }}">
+                                    <button class="btn btn-outline-secondary" onclick="updateCartItem('{{ item.id }}', 'increase', this)">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <span class="h6" id="price-{{ item.id }}">${{ item.total_price|floatformat:2 }}</span>
+                            </div>
+                            <div class="col-md-1">
+                                <button class="btn btn-link text-danger" onclick="removeFromCart('{{ item.id }}', this)" title="Remove from cart">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary-custom">
+                                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+                            </a>
+                            <button class="btn btn-danger" onclick="clearCart()">
+                                <i class="fas fa-trash me-2"></i>Clear Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Order Summary</h5>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal</span>
+                            <span id="subtotal-amount">${{ cart_total|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping</span>
+                            <span id="shipping-amount">
+                                {% if cart_total >= 50 %}
+                                $5.99
+                                {% else %}
+                                FREE
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tax (10%)</span>
+                            <span id="tax-amount">${{ cart_tax|floatformat:2 }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Discount</span>
+                            <span id="discount-amount" class="text-success">-${{ cart_discount|floatformat:2 }}</span>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between mb-4">
+                            <strong>Total</strong>
+                            <strong class="h5 text-primary-custom" id="grand-total">${{ cart_grand_total|floatformat:2 }}</strong>
+                        </div>
+                        
+                        <a href="{% url 'orders:checkout' %}" class="btn btn-primary-custom btn-lg w-100" id="checkout-btn" style="padding: 14px 24px; font-size: 1.05rem;">
+                            <i class="fas fa-lock me-2"></i>Proceed to Checkout
+                        </a>
+                        
+                        <div class="mt-3">
+                            <p class="small text-muted">
+                                <i class="fas fa-lock me-2"></i>Secure checkout
+                            </p>
+                            <div class="text-center">
+                                <img src="https://img.icons8.com/color/48/000000/visa.png" alt="Visa" height="30" class="me-2">
+                                <img src="https://img.icons8.com/color/48/000000/mastercard.png" alt="Mastercard" height="30" class="me-2">
+                                <img src="https://img.icons8.com/color/48/000000/paypal.png" alt="PayPal" height="30">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Promo Code -->
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Promo Code</h6>
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Enter code" id="promoCode">
+                            <button class="btn btn-accent" onclick="applyPromoCode()">Apply</button>
+                        </div>
+                        <div id="promoMessage" class="mt-2 small"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recently Viewed -->
+        {% if recently_viewed %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <h4 class="mb-4">Recently Viewed</h4>
+                <div class="row g-3">
+                    {% for product in recently_viewed %}
+                    <div class="col-md-2 col-6">
+                        <div class="card">
+                            {% if product.primary_image_url %}
+                            <img src="{{ product.primary_image_url }}" alt="{{ product.name }}" class="card-img-top" style="height: 150px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                                <i class="fas fa-box text-muted fa-2x"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body p-2">
+                                <small>{{ product.name|truncatechars:30 }}</small>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-primary-custom">${{ product.price|floatformat:2 }}</small>
+                                    <button class="btn btn-sm btn-outline-primary-custom" onclick="addToCartFromRecentlyViewed('{{ product.id }}', this)">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <div style="margin-bottom: 30px;">
+                <i class="fas fa-shopping-cart fa-5x mb-4"></i>
+            </div>
+            <h3>Your cart is empty</h3>
+            <p class="mb-4">Add some products to your cart to proceed</p>
+            <a href="{% url 'products:product_list' %}" class="btn btn-primary-custom btn-lg">
+                <i class="fas fa-shopping-bag me-2"></i>Start Shopping
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showNotification(type, message) {
+        if (typeof showToast === 'function') {
+            showToast(message, type);
+        } else if (typeof showStyledMessage === 'function') {
+            showStyledMessage(type, message);
+        } else {
+            alert(message);
+        }
+    }
+
+    // Calculate and update all totals instantly
+    function updateAllTotals() {
+        let subtotal = 0;
+        
+        // Calculate subtotal from all cart items
+        document.querySelectorAll('.cart-item-row').forEach(row => {
+            const priceElement = document.getElementById('price-' + row.dataset.itemId);
+            if (priceElement) {
+                const priceText = priceElement.textContent;
+                const price = parseFloat(priceText.replace('$', '')) || 0;
+                subtotal += price;
+            }
+        });
+        
+        // Calculate shipping (FREE if subtotal >= 50)
+        let shipping = 0;
+        let shippingText = 'FREE';
+        if (subtotal > 0 && subtotal < 50) {
+            shipping = 5.99;
+            shippingText = '$5.99';
+        }
+        
+        // Calculate tax (10% of subtotal)
+        let tax = subtotal * 0.1;
+        
+        // Get discount (from promo code if applied)
+        let discount = 0;
+        const discountElement = document.getElementById('discount-amount');
+        if (discountElement) {
+            const discountText = discountElement.textContent;
+            discount = Math.abs(parseFloat(discountText.replace('-', '').replace('$', ''))) || 0;
+        }
+        
+        // Calculate grand total
+        let grandTotal = subtotal + shipping + tax - discount;
+        
+        // Update DOM elements
+        const subtotalEl = document.getElementById('subtotal-amount');
+        const taxEl = document.getElementById('tax-amount');
+        const shippingEl = document.getElementById('shipping-amount');
+        const grandTotalEl = document.getElementById('grand-total');
+        
+        if (subtotalEl) subtotalEl.textContent = '$' + subtotal.toFixed(2);
+        if (taxEl) taxEl.textContent = '$' + tax.toFixed(2);
+        if (shippingEl) shippingEl.innerHTML = shippingText;
+        if (grandTotalEl) grandTotalEl.textContent = '$' + grandTotal.toFixed(2);
+    }
+    
+    // Update cart item quantity
+    function updateCartItem(itemId, action, button) {
+        const qtyInput = document.getElementById('qty-' + itemId);
+        let currentQty = parseInt(qtyInput.value) || 1;
+        let newQty = currentQty;
+        
+        if (action === 'increase') {
+            newQty = currentQty + 1;
+        } else if (action === 'decrease') {
+            newQty = Math.max(1, currentQty - 1);
+        }
+        
+        if (newQty === currentQty) return;
+        
+        // Get unit price from the row
+        const row = document.getElementById('item-' + itemId);
+        const unitPrice = parseFloat(row.dataset.price);
+        
+        // Optimistically update UI immediately
+        qtyInput.value = newQty;
+        const newItemTotal = unitPrice * newQty;
+        const priceElement = document.getElementById('price-' + itemId);
+        if (priceElement) {
+            priceElement.textContent = '$' + newItemTotal.toFixed(2);
+        }
+        
+        // Update totals instantly
+        updateAllTotals();
+        
+        // Disable button during server request
+        if (button) button.disabled = true;
+        
+        // Send to server
+        fetch(`/cart/update/${itemId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ quantity: newQty })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update with server values to ensure accuracy
+                qtyInput.value = data.item_quantity;
+                if (priceElement) {
+                    priceElement.textContent = '$' + parseFloat(data.item_total).toFixed(2);
+                }
+                updateAllTotals();
+                updateNavbarCartCount();
+            } else {
+                // Revert on error
+                qtyInput.value = currentQty;
+                if (priceElement) {
+                    priceElement.textContent = '$' + (unitPrice * currentQty).toFixed(2);
+                }
+                updateAllTotals();
+                showNotification('error', data.message || 'Error updating cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Revert on error
+            qtyInput.value = currentQty;
+            if (priceElement) {
+                priceElement.textContent = '$' + (unitPrice * currentQty).toFixed(2);
+            }
+            updateAllTotals();
+            showNotification('error', 'Network error. Please try again.');
+        })
+        .finally(() => {
+            if (button) button.disabled = false;
+        });
+    }
+    
+    // Remove item from cart
+    function removeFromCart(itemId, button) {
+        if (!confirm('Remove this item from cart?')) return;
+        
+        if (button) button.disabled = true;
+        const itemElement = document.getElementById('item-' + itemId);
+        
+        // Optimistically remove from UI
+        if (itemElement) {
+            itemElement.classList.add('cart-item-removing');
+            setTimeout(() => {
+                itemElement.remove();
+                updateAllTotals();
+                updateNavbarCartCount();
+                
+                // Check if cart is empty
+                const remainingItems = document.querySelectorAll('.cart-item-row');
+                if (remainingItems.length === 0) {
+                    location.reload();
+                }
+            }, 300);
+        }
+        
+        // Send to server
+        fetch(`/cart/remove/${itemId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showNotification('error', data.message || 'Error removing item');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('error', 'Network error. Please try again.');
+            location.reload();
+        });
+    }
+    
+    // Clear entire cart
+    function clearCart() {
+        if (!confirm('Clear all items from cart?')) return;
+        
+        // Optimistically clear UI
+        const container = document.getElementById('cart-items-container');
+        if (container) {
+            const items = document.querySelectorAll('.cart-item-row');
+            items.forEach(item => {
+                item.classList.add('cart-item-removing');
+            });
+            setTimeout(() => {
+                items.forEach(item => item.remove());
+                updateAllTotals();
+                updateNavbarCartCount();
+                location.reload();
+            }, 300);
+        }
+        
+        fetch('/cart/clear/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showNotification('error', data.message || 'Error clearing cart');
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('error', 'Network error. Please try again.');
+            location.reload();
+        });
+    }
+    
+    // Update navbar cart count
+    function updateNavbarCartCount() {
+        fetch('/cart/summary/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.cart) {
+                const cartCountBadge = document.getElementById('cart-count');
+                if (cartCountBadge) {
+                    const quantity = data.cart.quantity || 0;
+                    cartCountBadge.textContent = quantity;
+                    cartCountBadge.style.display = quantity > 0 ? 'inline-block' : 'none';
+                }
+            }
+        })
+        .catch(error => console.error('Error updating cart count:', error));
+    }
+    
+    // Apply promo code
+    function applyPromoCode() {
+        const code = document.getElementById('promoCode').value.trim();
+        if (!code) {
+            showNotification('warning', 'Please enter a promo code');
+            return;
+        }
+        
+        const applyBtn = event.target;
+        const originalText = applyBtn.innerHTML;
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        fetch(`/cart/apply-promo/${encodeURIComponent(code)}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const messageEl = document.getElementById('promoMessage');
+            if (data.success) {
+                messageEl.innerHTML = `<span class="text-success">${data.message}</span>`;
+                // Update discount amount
+                const discountEl = document.getElementById('discount-amount');
+                if (discountEl && data.discount) {
+                    discountEl.textContent = '-$' + parseFloat(data.discount).toFixed(2);
+                }
+                updateAllTotals();
+                setTimeout(() => {
+                    messageEl.innerHTML = '';
+                }, 5000);
+            } else {
+                messageEl.innerHTML = `<span class="text-danger">${data.message}</span>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('promoMessage').innerHTML = '<span class="text-danger">Error applying promo code</span>';
+        })
+        .finally(() => {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = originalText;
+        });
+    }
+    
+    // Add to cart from recently viewed
+    function addToCartFromRecentlyViewed(productId, button) {
+        const originalHTML = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ quantity: 1 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('success', 'Product added to cart!');
+                updateNavbarCartCount();
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.disabled = false;
+                }, 2000);
+            } else {
+                showNotification('error', data.message || 'Failed to add product');
+                button.innerHTML = originalHTML;
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('error', 'Network error. Please try again.');
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        });
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        updateAllTotals();
+    });
+</script>
+{% endblock %}

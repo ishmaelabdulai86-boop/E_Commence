@@ -1,0 +1,356 @@
+<!-- payments/templates/payments/detail.html -->
+{% extends 'base.html' %}
+{% load static humanize %}
+
+{% block title %}Payment Details - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- Add this to the header section if not already there -->
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'account_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'payment_history' %}">Payment History</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Payment Details</li>
+        </ol>
+    </nav>
+</div>
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Payment Details</h1>
+            <p class="text-muted">Payment ID: {{ payment.payment_id }}</p>
+        </div>
+        <div>
+            <a href="{% url 'payment_history' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to History
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Payment Information -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Payment ID:</strong></td>
+                                    <td>{{ payment.payment_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if payment.is_successful %}
+                                        <span class="badge bg-success">Completed</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">{{ payment.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Amount:</strong></td>
+                                    <td>
+                                        <span class="h5 text-primary">
+                                            {{ payment.currency }} {{ payment.amount|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Payment Method:</strong></td>
+                                    <td>{{ payment.get_payment_method_display }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Gateway:</strong></td>
+                                    <td>{{ payment.payment_gateway|title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Transaction ID:</strong></td>
+                                    <td>
+                                        <code>{{ payment.gateway_transaction_id|default:"N/A" }}</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Created:</strong></td>
+                                    <td>{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                {% if payment.paid_at %}
+                                <tr>
+                                    <td><strong>Paid:</strong></td>
+                                    <td>{{ payment.paid_at|date:"M d, Y H:i" }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if payment.gateway_error %}
+                    <div class="alert alert-danger mt-3">
+                        <h6 class="alert-heading">Error Message</h6>
+                        <p class="mb-0">{{ payment.gateway_error }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Information -->
+            {% if payment.order %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Order Number:</strong></td>
+                                    <td>
+                                        <a href="{% url 'order_detail' payment.order.order_number %}" 
+                                           class="text-decoration-none">
+                                            {{ payment.order.order_number }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Order Status:</strong></td>
+                                    <td>
+                                        <span class="badge bg-info">{{ payment.order.get_status_display }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Shipping:</strong></td>
+                                    <td>{{ payment.order.shipping_method|default:"Standard" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Items:</strong></td>
+                                    <td>{{ payment.order.items.count }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Subtotal:</strong></td>
+                                    <td>${{ payment.order.subtotal|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Shipping:</strong></td>
+                                    <td>${{ payment.order.shipping_cost|floatformat:2 }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Refund Section -->
+            {% if payment.is_refundable %}
+            <div class="card" id="refund">
+                <div class="card-header">
+                    <h5 class="mb-0">Request Refund</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'create_refund' payment.payment_id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Refund Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ payment.currency }}</span>
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       step="0.01" min="0.01" max="{{ payment.amount|stringformat:'f' }}"
+                                       value="{{ payment.amount|stringformat:'f' }}" required>
+                                <span class="input-group-text">
+                                    Max: {{ payment.currency }} {{ payment.amount|floatformat:2 }}
+                                </span>
+                            </div>
+                            <div class="form-text">
+                                Enter the amount you wish to refund (up to the original payment amount).
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Refund Reason</label>
+                            <select class="form-select" id="reason" name="reason" required>
+                                <option value="requested_by_customer">Requested by Customer</option>
+                                <option value="product_return">Product Return</option>
+                                <option value="duplicate">Duplicate Transaction</option>
+                                <option value="fraudulent">Fraudulent</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3" placeholder="Please provide additional details..."></textarea>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Refunds may take 5-10 business days to process, depending on your payment method.
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-undo me-2"></i>Submit Refund Request
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Customer Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td><strong>Name:</strong></td>
+                            <td>{{ request.user.get_full_name|default:request.user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Email:</strong></td>
+                            <td>{{ payment.customer_email }}</td>
+                        </tr>
+                        {% if payment.customer_phone %}
+                        <tr>
+                            <td><strong>Phone:</strong></td>
+                            <td>{{ payment.customer_phone }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if payment.billing_address %}
+                        <tr>
+                            <td><strong>Billing Address:</strong></td>
+                            <td>{{ payment.billing_address|linebreaksbr }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- Refund History -->
+            {% if refunds %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Refund History</h5>
+                </div>
+                <div class="card-body">
+                    {% for refund in refunds %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ refund.refund_id }}</strong>
+                            <span class="badge {% if refund.is_completed %}bg-success{% else %}bg-warning{% endif %}">
+                                {{ refund.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="text-muted small">
+                            Amount: {{ refund.currency }} {{ refund.amount|floatformat:2 }}
+                        </div>
+                        <div class="text-muted small">
+                            Requested: {{ refund.requested_at|date:"M d, Y" }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">Actions</h6>
+                    <div class="d-grid gap-2">
+                        <!-- In the Actions section of detail.html, replace the retry button section: -->
+                        {% if not payment.is_successful and payment.status != 'cancelled' and payment.order %}
+                        <a href="{% url 'payment_process' payment.order.id %}" class="btn btn-primary">
+                            <i class="fas fa-redo me-2"></i>Retry Payment
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'payment_history' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-2"></i>Payment History
+                        </a>
+                        
+                        {% if payment.order %}
+                        <a href="{% url 'order_detail' payment.order.order_number %}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-shopping-bag me-2"></i>View Order
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.payment-status-badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+.refund-section {
+    border-left: 4px solid #ffc107;
+}
+
+.transaction-code {
+    font-family: 'Courier New', monospace;
+    background-color: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+
+.payment-actions .btn {
+    min-width: 140px;
+}
+</style>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Refund amount validation
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amount');
+    const maxAmount = parseFloat('{{ payment.amount }}');
+    
+    if (amountInput) {
+        amountInput.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            
+            if (value > maxAmount) {
+                this.value = maxAmount.toFixed(2);
+                alert('Refund amount cannot exceed original payment amount.');
+            }
+            
+            if (value < 0.01) {
+                this.value = '0.01';
+            }
+        });
+    }
+    
+    // Show confirmation for refund request
+    const refundForm = document.querySelector('#refund form');
+    if (refundForm) {
+        refundForm.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to submit this refund request?')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

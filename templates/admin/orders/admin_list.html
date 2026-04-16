@@ -1,0 +1,724 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Manage Orders - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 gradient-text">Manage Orders</h1>
+        <a href="?export=csv" class="btn btn-primary">
+            <i class="fas fa-download me-2"></i> Export CSV
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <h6 class="m-0 font-weight-bold gradient-text">Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" name="q" placeholder="Search orders..." 
+                           value="{{ request.GET.q|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" name="status">
+                        <option value="">All Status</option>
+                        {% for status_value, status_name in status_choices %}
+                        <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-control" name="payment_status">
+                        <option value="">All Payment</option>
+                        {% for status_value, status_name in payment_choices %}
+                        <option value="{{ status_value }}" {% if request.GET.payment_status == status_value %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" name="date_from" placeholder="From Date"
+                           value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control" name="date_to" placeholder="To Date"
+                           value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Cards - First Row (3 cards) -->
+    <div class="row mb-3">
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-shopping-cart fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Orders</h6>
+                            <h3 class="mb-0 fw-bold">{{ order_stats.total }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Pending</h6>
+                            <h3 class="mb-0 fw-bold">{{ order_stats.pending }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-cog fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Processing</h6>
+                            <h3 class="mb-0 fw-bold">{{ order_stats.processing }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards - Second Row (3 cards) -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Delivered</h6>
+                            <h3 class="mb-0 fw-bold">{{ order_stats.delivered }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-danger-gradient text-white me-3">
+                            <i class="fas fa-times-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Cancelled</h6>
+                            <h3 class="mb-0 fw-bold">{{ order_stats.cancelled }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-purple-gradient text-white me-3">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Today's Revenue</h6>
+                            <h3 class="mb-0 fw-bold">${{ today_revenue|floatformat:2 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold gradient-text">Orders List</h6>
+            <span class="badge bg-primary">{{ orders.paginator.count }} Orders</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Payment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <strong>{{ order.order_number }}</strong>
+                                <br>
+                                <small class="text-muted">{{ order.shipping_method|title }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ order.user.username }}</strong>
+                                <br>
+                                <small class="text-muted">{{ order.user.email }}</small>
+                                <br>
+                                <small>{{ order.shipping_city }}, {{ order.shipping_state }}</small>
+                            </td>
+                            <td>{{ order.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ order.item_count }}</span>
+                            </td>
+                            <td><strong>${{ order.total_amount|floatformat:2 }}</strong></td>
+                            <td>
+                                <span class="badge bg-{% if order.status == 'delivered' %}success
+                                            {% elif order.status == 'shipped' %}info
+                                            {% elif order.status == 'processing' %}primary
+                                            {% elif order.status == 'pending' %}warning
+                                            {% elif order.status == 'cancelled' %}danger
+                                            {% else %}secondary{% endif %}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if order.payment_status == 'paid' %}success
+                                            {% elif order.payment_status == 'pending' %}warning
+                                            {% elif order.payment_status == 'failed' %}danger
+                                            {% else %}secondary{% endif %}">
+                                    {{ order.get_payment_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'orders:admin_order_detail' order.order_number %}" class="btn btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'orders:admin_order_edit' order.order_number %}" class="btn btn-outline-secondary" title="Edit" target="_blank">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger delete-order-btn" title="Delete" 
+                                            data-order-number="{{ order.order_number }}" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="empty-state">
+                                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No orders found</h5>
+                                    <p class="text-muted">Try adjusting your filters</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if orders.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if orders.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ orders.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}" 
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in orders.paginator.page_range %}
+                    {% if orders.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if query_params %}&{{ query_params }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if orders.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ orders.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}" 
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-danger bg-opacity-10 border-bottom-danger">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Delete Order
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger mb-3">
+                    <strong>Warning!</strong> This action cannot be undone.
+                </div>
+                <p class="mb-2"><strong>Order Number:</strong></p>
+                <p class="mb-4" id="deleteOrderNumber" style="font-size: 1.1rem; color: #ef4444;"></p>
+                
+                <p class="mb-2"><strong>Customer:</strong></p>
+                <p class="mb-4" id="deleteOrderCustomer"></p>
+                
+                <p class="mb-2"><strong>Total Amount:</strong></p>
+                <p class="mb-0" id="deleteOrderTotal" style="font-weight: bold;"></p>
+                
+                <hr class="my-3">
+                <p class="text-muted mb-0">Deleting this order will permanently remove all associated data including items, payments, and shipping information.</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-2"></i>Delete Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Delete order modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteModal');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    let currentOrderNumber = null;
+
+    // When delete button is clicked
+    document.querySelectorAll('.delete-order-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentOrderNumber = this.dataset.orderNumber;
+            
+            // Get order data from table row
+            const row = this.closest('tr');
+            const orderNumber = row.querySelector('td:first-child strong').textContent;
+            const customer = row.querySelector('td:nth-child(2) strong').textContent;
+            const total = row.querySelector('td:nth-child(5) strong').textContent;
+            
+            // Populate modal
+            document.getElementById('deleteOrderNumber').textContent = orderNumber;
+            document.getElementById('deleteOrderCustomer').textContent = customer;
+            document.getElementById('deleteOrderTotal').textContent = total;
+        });
+    });
+
+    // Confirm delete
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (!currentOrderNumber) return;
+        
+        // Show loading state
+        const originalText = confirmDeleteBtn.innerHTML;
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+        confirmDeleteBtn.disabled = true;
+
+        // Send delete request
+        fetch(`{% url 'orders:admin_order_delete' 'ORDER_NUMBER' %}`.replace('ORDER_NUMBER', currentOrderNumber), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Delete failed');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i><strong>Success!</strong> ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('afterbegin', alertHtml);
+                
+                // Remove row from table and close modal
+                const row = document.querySelector(`button[data-order-number="${currentOrderNumber}"]`).closest('tr');
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    bootstrap.Modal.getInstance(deleteModal).hide();
+                }, 300);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete order. Please try again.');
+            confirmDeleteBtn.innerHTML = originalText;
+            confirmDeleteBtn.disabled = false;
+        });
+    });
+
+    // Reset button state when modal is hidden
+    deleteModal.addEventListener('hidden.bs.modal', function() {
+        confirmDeleteBtn.innerHTML = '<i class="fas fa-trash me-2"></i>Delete Order';
+        confirmDeleteBtn.disabled = false;
+        currentOrderNumber = null;
+    });
+});
+</script>
+
+<style>
+    /* Modern Stat Cards - Full width design */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.75rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds for icon circles */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+    
+    .bg-danger-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+    }
+    
+    .bg-purple-gradient {
+        background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+    }
+    
+    .bg-teal-gradient {
+        background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%) !important;
+    }
+    
+    .bg-pink-gradient {
+        background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%) !important;
+    }
+
+    /* Card specific gradients */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(5)::before { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+    .stat-card:nth-child(6)::before { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+
+    /* Text styling */
+    .stat-card .text-muted {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 800;
+        color: var(--text-primary);
+        font-size: 2rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Stats text container */
+    .stat-card > .card-body > div:last-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Row spacing */
+    .row.mb-3 {
+        margin-bottom: 1.5rem !important;
+    }
+
+    .row.mb-4 {
+        margin-bottom: 2rem !important;
+    }
+
+    /* Table improvements */
+    .table th {
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--border-color);
+        background-color: rgba(99, 102, 241, 0.05);
+        padding: 1.25rem 0.75rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 1.25rem 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(99, 102, 241, 0.03);
+        transform: translateX(2px);
+        transition: all 0.2s ease;
+    }
+
+    .btn-group .btn {
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-md);
+        transition: all 0.2s ease;
+    }
+
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .badge {
+        padding: 0.5rem 0.85rem;
+        font-weight: 600;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 3rem 0;
+    }
+    
+    .empty-state i {
+        opacity: 0.5;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body {
+            padding: 1.5rem;
+        }
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.75rem;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .col-md-4 {
+            width: 33.333%;
+        }
+        .stat-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.5rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-md-4 {
+            width: 50%;
+        }
+        .stat-card {
+            min-height: 110px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-md-4 {
+            width: 100%;
+        }
+        .stat-card .card-body {
+            padding: 1.5rem;
+        }
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+        }
+        .stat-card .fw-bold {
+            font-size: 1.75rem;
+        }
+        .stat-card .text-muted {
+            font-size: 0.9rem;
+        }
+    }
+    
+    /* Animation for page load */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stat-card {
+        animation: slideUp 0.4s ease-out forwards;
+        opacity: 0;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    .stat-card:nth-child(5) { animation-delay: 0.5s; }
+    .stat-card:nth-child(6) { animation-delay: 0.6s; }
+</style>
+<script>
+    $(document).ready(function() {
+    // Handle view button click
+    $('.view-order-btn').click(function(e) {
+        e.preventDefault();
+        var orderNumber = $(this).data('order-number');
+        
+        // Update modal title
+        $('#modalOrderNumber').text(orderNumber);
+        
+        // Update full details link
+        $('#fullDetailLink').attr('href', '{% url "orders:admin_order_detail" "ORDER_NUM" %}'.replace('ORDER_NUM', orderNumber));
+        
+        // Load order details via AJAX
+        $.ajax({
+            url: '{% url "orders:admin_order_detail_modal" "ORDER_NUM" %}'.replace('ORDER_NUM', orderNumber),
+            type: 'GET',
+            success: function(data) {
+                $('#orderModalBody').html(data);
+            },
+            error: function() {
+                $('#orderModalBody').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Failed to load order details. Please try again.
+                    </div>
+                `);
+            }
+        });
+        
+        // Show modal
+        var orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
+        orderModal.show();
+    });
+});
+</script>
+{% endblock %}

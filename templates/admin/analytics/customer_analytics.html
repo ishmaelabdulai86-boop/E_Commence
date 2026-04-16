@@ -1,0 +1,491 @@
+<!-- analytics/templates/analytics/customer_analytics.html -->
+{% extends 'admin/admin_base.html' %}
+{% load static humanize %}
+
+{% block title %}Customer Analytics - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+<style>
+.customer-segment {
+    border-left: 4px solid;
+}
+.segment-new { border-left-color: #4e73df; }
+.segment-occasional { border-left-color: #1cc88a; }
+.segment-regular { border-left-color: #36b9cc; }
+.segment-loyal { border-left-color: #f6c23e; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 text-gray-800">Customer Analytics</h1>
+            <p class="text-muted">Customer behavior and demographics analysis</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'analytics:export_report' 'customers_csv' %}" class="btn btn-success">
+                <i class="fas fa-file-csv me-2"></i> Export CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Overview - UPDATED with Gradient Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-users fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Customers</h6>
+                            <h3 class="mb-0 fw-bold">{{ total_customers|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-crown fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">High-Value Customers</h6>
+                            <h3 class="mb-0 fw-bold">{{ high_value_customers|length|intcomma }}</h3>
+                            <small class="text-muted">Spending > $1,000</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-dollar-sign fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Avg Customer Value</h6>
+                            <h3 class="mb-0 fw-bold">${{ avg_customer_value|default:"0.00"|floatformat:2|intcomma }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Segmentation - UPDATED with Gradient Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Customer Segmentation</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for segment in customer_segments %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card segment-card border-0">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle segment-icon-{{ forloop.counter }} text-white me-3">
+                                            <i class="fas 
+                                                {% if segment.segment == 'New Customers' %}fa-user-plus
+                                                {% elif segment.segment == 'Occasional Buyers' %}fa-shopping-basket
+                                                {% elif segment.segment == 'Regular Customers' %}fa-user-check
+                                                {% elif segment.segment == 'Loyal Customers' %}fa-medal
+                                                {% else %}fa-users{% endif %} 
+                                                fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">{{ segment.segment }}</h6>
+                                            <h3 class="mb-0 fw-bold">{{ segment.count|intcomma }}</h3>
+                                            <small class="text-muted">customers</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Acquisition Chart -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Customer Acquisition</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="acquisitionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- High-Value Customers -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">High-Value Customers</h6>
+            <span class="badge bg-success">Spent > $1,000</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Customer</th>
+                            <th>Email</th>
+                            <th class="text-end">Total Orders</th>
+                            <th class="text-end">Total Spent</th>
+                            <th class="text-end">First Purchase</th>
+                            <th class="text-end">Last Purchase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in high_value_customers %}
+                        <tr>
+                            <td>
+                                {% if customer.first_name and customer.last_name %}
+                                    {{ customer.first_name }} {{ customer.last_name }}
+                                {% else %}
+                                    {{ customer.username }}
+                                {% endif %}
+                            </td>
+                            <td>{{ customer.email }}</td>
+                            <td class="text-end">{{ customer.order_count|intcomma }}</td>
+                            <td class="text-end">${{ customer.total_spent|floatformat:2|intcomma }}</td>
+                            <td class="text-end">
+                                {% if customer.first_order_date %}
+                                    {{ customer.first_order_date|date:"M d, Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if customer.last_order_date %}
+                                    {{ customer.last_order_date|date:"M d, Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No high-value customers found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Retention -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Customer Retention</h6>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="retentionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Modern Stat Cards - Gradient Style */
+    .stat-card, .segment-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before, .segment-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover, .segment-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body, .segment-card .card-body {
+        padding: 1.5rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle, .segment-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds for summary cards */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+
+    /* Segment-specific icon colors */
+    .segment-icon-1 {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .segment-icon-2 {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .segment-icon-3 {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .segment-icon-4 {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+
+    /* Card specific top borders - Summary Cards */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+
+    /* Card specific top borders - Segment Cards */
+    .segment-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .segment-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .segment-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .segment-card:nth-child(4)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+
+    /* Text styling */
+    .stat-card .text-muted, .segment-card .text-muted {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold, .segment-card .fw-bold {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+
+    /* Remove old segmentation styles */
+    .customer-segment {
+        display: none;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .stat-card .card-body, .segment-card .card-body {
+            padding: 1.25rem;
+        }
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+        .stat-card .fw-bold, .segment-card .fw-bold {
+            font-size: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .segment-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
+        }
+        .segment-card .fw-bold {
+            font-size: 1.4rem;
+        }
+        .segment-card .text-muted {
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .col-md-4, .col-md-6 {
+            width: 50%;
+        }
+        .stat-card, .segment-card {
+            min-height: 100px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .col-md-4, .col-md-6 {
+            width: 100%;
+        }
+        .stat-card .card-body, .segment-card .card-body {
+            padding: 1rem;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        .stat-card .fw-bold, .segment-card .fw-bold {
+            font-size: 1.25rem;
+        }
+        .stat-card .text-muted, .segment-card .text-muted {
+            font-size: 0.75rem;
+        }
+    }
+
+    /* Animation for page load */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .stat-card, .segment-card {
+        animation: slideUp 0.4s ease-out forwards;
+        opacity: 0;
+    }
+    
+    /* Staggered animations for summary cards */
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    
+    /* Staggered animations for segment cards */
+    .segment-card:nth-child(1) { animation-delay: 0.4s; }
+    .segment-card:nth-child(2) { animation-delay: 0.5s; }
+    .segment-card:nth-child(3) { animation-delay: 0.6s; }
+    .segment-card:nth-child(4) { animation-delay: 0.7s; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+// Customer Acquisition Chart
+const acquisitionCtx = document.getElementById('acquisitionChart').getContext('2d');
+const acquisitionData = {{ acquisition_data|safe }};
+
+const acquisitionChart = new Chart(acquisitionCtx, {
+    type: 'bar',
+    data: {
+        labels: acquisitionData.map(item => item.month),
+        datasets: [{
+            label: 'New Customers',
+            data: acquisitionData.map(item => item.new_customers),
+            backgroundColor: '#4e73df',
+            borderColor: '#4e73df',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Customer Retention Chart
+const retentionCtx = document.getElementById('retentionChart').getContext('2d');
+const retentionData = {{ retention_data|safe }};
+
+const retentionChart = new Chart(retentionCtx, {
+    type: 'line',
+    data: {
+        labels: retentionData.map(item => item.month),
+        datasets: [{
+            label: 'Active Customers',
+            data: retentionData.map(item => item.customers),
+            borderColor: '#1cc88a',
+            backgroundColor: 'rgba(28, 200, 138, 0.05)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

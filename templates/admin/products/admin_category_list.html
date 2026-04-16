@@ -1,0 +1,430 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Category Management - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 gradient-text">Category Management</h1>
+        <div>
+            <a href="{% url 'products:admin_category_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i> Add New Category
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary-gradient text-white me-3">
+                            <i class="fas fa-folder fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Categories</h6>
+                            <h3 class="mb-0 fw-bold">{{ total_categories }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success-gradient text-white me-3">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Active Categories</h6>
+                            <h3 class="mb-0 fw-bold">{{ active_categories }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info-gradient text-white me-3">
+                            <i class="fas fa-sitemap fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Subcategories</h6>
+                            <h3 class="mb-0 fw-bold">{{ total_subcategories }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card border-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning-gradient text-white me-3">
+                            <i class="fas fa-cubes fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Total Products</h6>
+                            <h3 class="mb-0 fw-bold">{{ total_products }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter and Search -->
+    <div class="card shadow mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold gradient-text">Search & Filter</h6>
+                <form class="d-flex" method="get">
+                    <input type="text" class="form-control form-control-sm me-2" name="q" 
+                           placeholder="Search categories..." value="{{ request.GET.q }}">
+                    <button class="btn btn-sm btn-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">Category Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="main" {% if request.GET.type == 'main' %}selected{% endif %}>Main Categories</option>
+                        <option value="sub" {% if request.GET.type == 'sub' %}selected{% endif %}>Subcategories</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Categories Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold gradient-text">All Categories</h6>
+            <span class="badge bg-primary">{{ categories.count }} Categories</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Category</th>
+                            <th>Slug</th>
+                            <th>Products</th>
+                            <th>Subcategories</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td class="fw-bold">#{{ category.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if category.image_url %}
+                                    <img src="{{ category.image_url }}" 
+                                         alt="{{ category.name }}" 
+                                         class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded bg-light d-flex align-items-center justify-content-center me-2" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="{{ category.icon|default:'fas fa-folder' }} text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{% url 'products:admin_category_detail' category.id %}" 
+                                           class="fw-bold text-decoration-none">
+                                            {{ category.name }}
+                                        </a>
+                                        {% if category.description %}
+                                        <br>
+                                        <small class="text-muted">{{ category.description|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <code class="bg-light p-1 rounded">{{ category.slug }}</code>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ category.products.count }}</span>
+                            </td>
+                            <td>
+                                {% if category.children.all %}
+                                <span class="badge bg-secondary">{{ category.children.count }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if category.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'products:admin_category_detail' category.id %}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'products:admin_category_edit' category.id %}" 
+                                       class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm delete-btn" 
+                                            data-category-id="{{ category.id }}"
+                                            data-category-name="{{ category.name }}"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal"
+                                            title="Delete category">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                                    <h5 class="gradient-text">No categories found</h5>
+                                    <p class="text-muted mb-4">Add your first category to get started.</p>
+                                    <a href="{% url 'products:admin_category_create' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i> Add Category
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Single Reusable Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form id="deleteForm" method="post" style="display: contents;">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold gradient-text" id="deleteModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                    </div>
+                    <p class="text-center">
+                        Are you sure you want to delete <strong id="deleteCategoryName"></strong>?
+                    </p>
+                    <p class="text-danger text-center small">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        This action cannot be undone.
+                    </p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle delete button clicks for categories
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const categoryId = this.getAttribute('data-category-id');
+            const categoryName = this.getAttribute('data-category-name');
+            
+            // Build the delete URL by replacing 0 with actual category ID
+            const deleteUrl = `{% url 'products:admin_category_delete' 0 %}`.replace('0', categoryId);
+            
+            // Update modal elements
+            document.getElementById('deleteCategoryName').textContent = categoryName;
+            document.getElementById('deleteForm').action = deleteUrl;
+        });
+    });
+});
+</script>
+
+<style>
+    /* Modern Stat Cards */
+    .stat-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        position: relative;
+        background: var(--card-bg);
+        box-shadow: var(--shadow);
+        height: 100%;
+        min-height: 120px;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--primary-gradient);
+        z-index: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .stat-card .card-body {
+        padding: 1.75rem;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    /* Gradient Icon Circles */
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .stat-card:hover .icon-circle {
+        transform: scale(1.15) rotate(10deg);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Gradient backgrounds for icon circles */
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    }
+    
+    .bg-success-gradient {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+    }
+    
+    .bg-info-gradient {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%) !important;
+    }
+    
+    .bg-warning-gradient {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+    }
+    
+    .bg-danger-gradient {
+        background: linear-gradient(135deg, #ef4444 0%, #f87171 100%) !important;
+    }
+
+    /* Card specific gradients */
+    .stat-card:nth-child(1)::before { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+    .stat-card:nth-child(2)::before { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+
+    /* Text styling */
+    .stat-card .text-muted {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .stat-card .fw-bold {
+        font-weight: 800;
+        color: var(--text-primary);
+        font-size: 2rem;
+        margin-bottom: 0;
+        line-height: 1.2;
+    }
+    
+    .table th {
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--border-color);
+        padding: 1rem 0.75rem;
+        background-color: rgba(99, 102, 241, 0.05);
+    }
+    
+    .table td {
+        vertical-align: middle;
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .btn-group .btn {
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .empty-state {
+        padding: 2rem 0;
+    }
+    
+    .modal-content {
+        border-radius: var(--radius-lg);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .modal-footer {
+        border-top: 1px solid var(--border-color);
+    }
+    
+    code {
+        font-size: 0.85rem;
+        font-family: 'Courier New', Courier, monospace;
+    }
+</style>
+{% endblock %}

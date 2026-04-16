@@ -1,0 +1,57 @@
+PAYMENT CONFIRMATION
+
+Hi {{ customer_name }},
+
+Thank you for your payment! Your transaction has been successfully processed.
+
+TOTAL AMOUNT PAID: ${{ payment.amount|floatformat:2 }}
+Status: {{ payment.get_status_display }}
+
+
+PAYMENT DETAILS
+===============
+Payment ID: {{ payment.payment_id }}
+Transaction ID: {{ payment.gateway_transaction_id|default:"N/A" }}
+Payment Method: {{ payment.get_payment_method_display }}
+Payment Gateway: {{ payment.payment_gateway }}
+Currency: {{ payment.currency }}
+Payment Date: {{ payment.created_at|date:"M d, Y - H:i" }}
+
+
+{% if payment.order %}
+RELATED ORDER
+=============
+Order Number: {{ payment.order.order_number }}
+Order Amount: ${{ payment.order.total_amount|floatformat:2 }}
+Order Status: {{ payment.order.get_status_display }}
+{% endif %}
+
+
+RECEIPT
+=======
+══════════════════════════════════════
+                PAYMENT RECEIPT
+══════════════════════════════════════
+
+Payment ID: {{ payment.payment_id }}
+Date: {{ payment.created_at|date:"M d, Y H:i:s" }}
+Status: {{ payment.get_status_display }}
+
+─────────────────────────────────────
+Amount: ${{ payment.amount|floatformat:2 }}
+Currency: {{ payment.currency }}
+Method: {{ payment.get_payment_method_display }}
+─────────────────────────────────────
+
+Thank you for your purchase!
+══════════════════════════════════════
+
+
+WHAT'S NEXT?
+============
+Your order is now confirmed and will be processed shortly. You'll receive a shipment notification with tracking information as soon as your items are dispatched.
+
+Keep this email for your records. Thank you for your business!
+
+---
+This is an automated email. Please do not reply directly to this message.

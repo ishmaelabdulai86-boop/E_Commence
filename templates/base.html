@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TechStore - Modern E-commerce{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #6C63FF;
+            --secondary-color: #FF6584;
+            --accent-color: #36D1DC;
+            --dark-color: #2A2D43;
+            --light-color: #F8F9FA;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #FF5252;
+        }
+        
+        .bg-primary-custom {
+            background-color: var(--primary-color) !important;
+        }
+        
+        .text-primary-custom {
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-primary-custom {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            background-color: #5a52d4;
+            border-color: #5a52d4;
+        }
+        
+        .btn-accent {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+        
+        .btn-accent:hover {
+            background-color: #2bb7c2;
+            border-color: #2bb7c2;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 100px 0;
+        }
+        
+        .product-card {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+        
+        .product-img {
+            height: 370px;
+            object-fit: cover;
+        }
+        
+        .badge-discount {
+            background-color: var(--secondary-color);
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1;
+        }
+        
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+        }
+        
+        .category-card {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .cart-badge {
+            background-color: var(--secondary-color) !important;
+        }
+        
+        .rating-stars {
+            color: var(--warning-color);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        /* Toast notification styles */
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        .toast {
+            animation: slideIn 0.3s ease-out;
+            z-index: 9999;
+        }
+        
+        .toast.fade-out {
+            animation: fadeOut 0.5s ease-out;
+        }
+        
+        /* ===== MODERN NAVBAR STYLES ===== */
+        .navbar-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar-modern .navbar-brand {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: white !important;
+            letter-spacing: -0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-modern .navbar-brand:hover {
+            transform: scale(1.05);
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .navbar-modern .navbar-brand i {
+            color: #fbbf24;
+            margin-right: 8px;
+        }
+        
+        .navbar-modern .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 8px 16px !important;
+            margin: 0 4px;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .navbar-modern .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            transform: translateX(-50%);
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+        
+        .navbar-modern .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white !important;
+        }
+        
+        .navbar-modern .nav-link:hover::after {
+            width: 80%;
+        }
+        
+        .navbar-modern .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white !important;
+        }
+        
+        /* Search Bar Styling */
+        .navbar-modern .search-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 2px 6px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-modern .search-wrapper:focus-within {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        .navbar-modern .search-wrapper input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+            outline: none;
+            padding: 8px 12px;
+            width: 200px;
+        }
+        
+        .navbar-modern .search-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .navbar-modern .search-wrapper button {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            padding: 4px 10px;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+        }
+        
+        .navbar-modern .search-wrapper button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        /* Icon Buttons */
+        .navbar-modern .btn-nav-icon {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin: 0 6px;
+            position: relative;
+        }
+        
+        .navbar-modern .btn-nav-icon:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Cart Badge */
+        .navbar-modern .cart-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 2px 6px !important;
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+            animation: pulse-badge 2s infinite;
+        }
+        
+        @keyframes pulse-badge {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        /* Auth Buttons */
+        .navbar-modern .btn-login {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+            margin: 0 6px;
+        }
+        
+        .navbar-modern .btn-login:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .navbar-modern .btn-register {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: white;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 10px 24px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+            transition: all 0.3s ease;
+            margin-left: 6px;
+        }
+        
+        .navbar-modern .btn-register:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+        
+        /* Dropdown Styling */
+        .navbar-modern .dropdown-toggle {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            color: white !important;
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 10px 16px !important;
+            transition: all 0.3s ease;
+            margin: 0 6px;
+        }
+        
+        .navbar-modern .dropdown-toggle:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            transform: translateY(-2px);
+        }
+        
+        .dropdown-menu {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95)) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.3s ease;
+            margin-top: 8px;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .dropdown-menu .dropdown-item {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 500;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 4px 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-menu .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            transform: translateX(4px);
+        }
+        
+        .dropdown-menu .dropdown-item i {
+            min-width: 20px;
+            color: #fbbf24;
+        }
+        
+        .dropdown-menu .dropdown-divider {
+            border-color: rgba(255, 255, 255, 0.15);
+            margin: 8px 0;
+        }
+        
+        /* Mobile Navbar */
+        .navbar-modern .navbar-toggler {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-modern .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.2);
+        }
+        
+        .navbar-modern .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        
+        @media (max-width: 991px) {
+            .navbar-modern .search-wrapper {
+                margin: 8px 0;
+                width: 100%;
+            }
+            
+            .navbar-modern .search-wrapper input {
+                width: 100%;
+            }
+            
+            .navbar-modern .nav-link::after {
+                display: none;
+            }
+            
+            .navbar-modern .nav-link:hover {
+                background: rgba(255, 255, 255, 0.15);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 60px 0;
+            }
+            
+            .product-img {
+                height: 150px;
+            }
+        }
+    </style>
+    <style>
+    /* Add these animation styles if not already present */
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    /* Message item styles */
+    .message-item {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .message-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Progress bar styles */
+    .progress-bar-success { background: linear-gradient(90deg, #10b981, #34d399); }
+    .progress-bar-danger, .progress-bar-error { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .progress-bar-warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .progress-bar-info { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    
+    /* Alert background styles */
+    .alert-success {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        color: #065f46;
+    }
+    .alert-danger, .alert-error {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        color: #7f1d1d;
+    }
+    .alert-warning {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #78350f;
+    }
+    .alert-info {
+        background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);
+        color: #1e3a8a;
+    }
+    
+    .btn-close-custom:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+</style>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    {% include 'messages.html' %}
+    <!-- Navigation - Modern Redesigned -->
+    <nav class="navbar navbar-expand-lg navbar-modern">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store"></i>TechStore
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto me-4">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="fas fa-home me-2"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:product_list' %}">
+                            <i class="fas fa-boxes me-2"></i>Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'products:category_list' %}">
+                            <i class="fas fa-th me-2"></i>Categories
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-bolt me-2"></i>Deals
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Search Bar -->
+                <form class="d-flex search-wrapper me-3" action="/search/" role="search">
+                    <input class="form-control" type="search" placeholder="Search products..." name="q" aria-label="Search" required>
+                    <button class="btn" type="submit" title="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                
+                <!-- Right Side Actions -->
+                <div class="d-flex align-items-center">
+                    <!-- Cart Button -->
+                    <a href="{% url 'cart:cart' %}" class="btn btn-nav-icon position-relative" id="cart-link" title="Shopping Cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill cart-badge" id="cart-count">
+                            {{ cart_items_count|default:0 }}
+                        </span>
+                    </a>
+                    
+                    <!-- Wishlist Button -->
+                    <a href="{% url 'products:wishlist' %}" class="btn btn-nav-icon" title="Wishlist">
+                        <i class="fas fa-heart"></i>
+                    </a>
+                    
+                    {% if user.is_authenticated %}
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Account">
+                            <i class="fas fa-user-circle me-2"></i><span class="d-none d-md-inline">{{ user.username|truncatechars:12 }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            {% if user.is_staff or user.is_superuser or user.role == 'admin' or user.role == 'seller' %}
+                                <!-- Admin/Seller Dashboard Links -->
+                                <li><a class="dropdown-item" href="{% url 'analytics:analytics_dashboard' %}">
+                                    <i class="fas fa-chart-line"></i>Analytics Dashboard
+                                </a></li>
+                                <li><a class="dropdown-item" href="/admin/">
+                                    <i class="fas fa-cog"></i>Django Admin
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'notifications:admin_notification_dashboard' %}">
+                                    <i class="fas fa-bell"></i>Notifications
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            
+                            <!-- Customer links -->
+                            <li><a class="dropdown-item" href="{% url 'users:profile' %}">
+                                <i class="fas fa-user"></i>Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'orders:order_list' %}">
+                                <i class="fas fa-shopping-bag"></i>My Orders
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:wishlist' %}">
+                                <i class="fas fa-heart"></i>Wishlist
+                            </a></li>
+                            <li><a class="dropdown-item" href="#">
+                                <i class="fas fa-cog"></i>Settings
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                                <i class="fas fa-sign-out-alt"></i>Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <!-- Auth Buttons -->
+                    <a href="{% url 'users:login' %}?next={{ request.path }}" class="btn btn-login">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    <a href="{% url 'users:register' %}" class="btn btn-register">
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer mt-5">
+        <div class="container py-5">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3"><i class="fas fa-store me-2"></i>TechStore</h5>
+                    <p>Your one-stop shop for all tech needs. Quality products, secure payments, fast delivery.</p>
+                    <div class="social-icons">
+                        <a href="#" class="text-light me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-light me-3"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-light"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                
+                <div class="col-md-2 mb-4">
+                    <h5 class="mb-3">Shop</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">All Products</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Featured</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">New Arrivals</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">On Sale</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-2 mb-4">
+                    <h5 class="mb-3">Support</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-light text-decoration-none">Help Center</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Contact Us</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Shipping Info</a></li>
+                        <li><a href="#" class="text-light text-decoration-none">Returns</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-4 mb-4">
+                    <h5 class="mb-3">Newsletter</h5>
+                    <p>Subscribe to get special offers and updates</p>
+                    <form class="d-flex">
+                        <input type="email" class="form-control me-2" placeholder="Your email">
+                        <button class="btn btn-accent" type="submit">Subscribe</button>
+                    </form>
+                </div>
+            </div>
+            <!-- Add this to your base.html navigation -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button" 
+                data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-bell"></i>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="badge bg-danger">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown" 
+                    style="min-width: 300px; max-height: 400px; overflow-y: auto;">
+                    <li>
+                        <h6 class="dropdown-header">Notifications</h6>
+                    </li>
+                    {% if user_notifications %}
+                        {% for notification in user_notifications|slice:":5" %}
+                        <li>
+                            <a class="dropdown-item {% if not notification.is_read %}fw-bold{% endif %}" 
+                            href="{% url 'notifications:notification_list' %}">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ notification.title|truncatechars:30 }}</h6>
+                                    <small>{{ notification.created_at|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1 small">{{ notification.message|truncatechars:50 }}</p>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% endfor %}
+                    {% else %}
+                        <li><a class="dropdown-item text-muted" href="#">No new notifications</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                    {% endif %}
+                    <li><a class="dropdown-item text-center" href="{% url 'notifications:notification_list' %}">View All</a></li>
+                </ul>
+            </li>
+            <hr class="bg-light">
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2024 TechStore. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <img src="https://img.icons8.com/color/48/000000/visa.png" alt="Visa" height="30" class="me-2">
+                    <img src="https://img.icons8.com/color/48/000000/mastercard.png" alt="Mastercard" height="30" class="me-2">
+                    <img src="https://img.icons8.com/color/48/000000/paypal.png" alt="PayPal" height="30" class="me-2">
+                    <img src="https://img.icons8.com/color/48/000000/mobile-payment.png" alt="Mobile Money" height="30">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <!-- Custom JS -->
+<!-- Custom JS -->
+<script>
+    // Helper function to get CSRF token
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Show styled message alert (matching messages.html design)
+    function showStyledMessage(type, message) {
+        // Remove any existing alerts to prevent duplicates
+        const existingAlerts = document.querySelectorAll('.custom-message-alert');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        let container = document.querySelector('.messages-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'messages-container';
+            container.style.cssText = 'position: fixed; top: 90px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;';
+            document.body.appendChild(container);
+        }
+
+        // Map type to bootstrap alert class
+        let alertClass = 'success';
+        let icon = '<i class="fas fa-check-circle fa-lg"></i>';
+        let title = 'Success!';
+        
+        if (type === 'error' || type === 'danger') {
+            alertClass = 'danger';
+            icon = '<i class="fas fa-exclamation-triangle fa-lg"></i>';
+            title = 'Error!';
+        } else if (type === 'warning') {
+            alertClass = 'warning';
+            icon = '<i class="fas fa-exclamation-circle fa-lg"></i>';
+            title = 'Warning!';
+        } else if (type === 'info') {
+            alertClass = 'info';
+            icon = '<i class="fas fa-info-circle fa-lg"></i>';
+            title = 'Information';
+        }
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-dismissible fade show alert-${alertClass} message-item custom-message-alert`;
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.style.cssText = `
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: none;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid;
+            animation: slideInRight 0.5s ease-out;
+        `;
+        
+        // Set border-left color based on type
+        if (type === 'success') {
+            alertDiv.style.borderLeftColor = '#10b981';
+        } else if (type === 'error' || type === 'danger') {
+            alertDiv.style.borderLeftColor = '#ef4444';
+        } else if (type === 'warning') {
+            alertDiv.style.borderLeftColor = '#f59e0b';
+        } else {
+            alertDiv.style.borderLeftColor = '#3b82f6';
+        }
+        
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0 me-3">
+                    ${icon}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <strong class="message-title" style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${title}</strong>
+                        <button type="button" class="btn-close btn-close-custom" data-bs-dismiss="alert" aria-label="Close"
+                                style="font-size: 0.7rem; padding: 0.5rem; opacity: 0.7; transition: all 0.3s ease;"></button>
+                    </div>
+                    <div class="message-content" style="line-height: 1.4; font-size: 0.9rem;">
+                        ${message}
+                    </div>
+                    <div class="progress mt-2" style="height: 3px; background-color: rgba(0,0,0,0.1);">
+                        <div class="progress-bar progress-bar-${alertClass}" 
+                             role="progressbar" 
+                             style="width: 100%; transition: width 5s linear;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(alertDiv);
+        
+        // Animate progress bar
+        const progressBar = alertDiv.querySelector('.progress-bar');
+        if (progressBar) {
+            setTimeout(() => {
+                progressBar.style.width = '0%';
+            }, 100);
+        }
+        
+        // Add hover effect
+        alertDiv.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 12px 35px rgba(0,0,0,0.2) !important';
+        });
+        
+        alertDiv.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+        
+        // Close button functionality
+        const closeBtn = alertDiv.querySelector('.btn-close-custom');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transform = 'translateX(100%)';
+                alertDiv.style.transition = 'all 0.5s ease';
+                setTimeout(() => alertDiv.remove(), 500);
+            });
+        }
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv && alertDiv.parentNode) {
+                alertDiv.style.opacity = '0';
+                alertDiv.style.transform = 'translateX(100%)';
+                alertDiv.style.transition = 'all 0.5s ease';
+                setTimeout(() => alertDiv.remove(), 500);
+            }
+        }, 5000);
+        
+        // Click on alert to dismiss
+        alertDiv.addEventListener('click', function(e) {
+            if (!e.target.classList.contains('btn-close-custom')) {
+                this.style.opacity = '0';
+                this.style.transform = 'translateX(100%)';
+                this.style.transition = 'all 0.5s ease';
+                setTimeout(() => this.remove(), 500);
+            }
+        });
+    }
+
+    // Update cart count badge
+    function updateCartCount(count) {
+        const badge = document.getElementById('cart-count');
+        if (badge) {
+            console.log('Updating cart count from', badge.textContent, 'to', count);
+            badge.textContent = count;
+            if (count > 0) {
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    // Add to cart function with styled messages
+    function addToCart(productId, buttonElement) {
+        if (!productId) {
+            showStyledMessage('error', 'Product ID not found');
+            return;
+        }
+        
+        console.log('Adding product to cart:', productId);
+        
+        // Show loading state on button
+        const originalText = buttonElement ? buttonElement.innerHTML : '';
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        }
+        
+        fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ quantity: 1 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Cart response:', data);
+            if (data.success) {
+                showStyledMessage('success', data.message || 'Product added to cart successfully!');
+                const newCount = data.cart_quantity || data.cart_count || 0;
+                updateCartCount(newCount);
+            } else {
+                showStyledMessage('error', data.message || 'Failed to add to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showStyledMessage('error', 'Network error. Please try again.');
+        })
+        .finally(() => {
+            if (buttonElement) {
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Toggle wishlist function with styled messages
+    function toggleWishlist(productId, buttonElement) {
+        if (!productId) {
+            showStyledMessage('error', 'Product ID not found');
+            return;
+        }
+        
+        const icon = buttonElement.querySelector('i');
+        const originalClass = icon.className;
+        
+        icon.className = 'fas fa-spinner fa-spin';
+        buttonElement.disabled = true;
+        
+        fetch(`/wishlist/toggle/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(async response => {
+            if (response.status === 302 || response.redirected) {
+                throw new Error('Please login to use wishlist');
+            }
+            const data = await response.json();
+            return data;
+        })
+        .then(data => {
+            if (data && data.success) {
+                if (data.action === 'added') {
+                    icon.className = 'fas fa-heart';
+                    showStyledMessage('success', 'Added to wishlist! ❤️');
+                } else {
+                    icon.className = 'far fa-heart';
+                    showStyledMessage('info', 'Removed from wishlist');
+                }
+            } else {
+                icon.className = originalClass;
+                showStyledMessage('error', data?.message || 'Could not update wishlist');
+            }
+        })
+        .catch(error => {
+            console.error('Wishlist error:', error);
+            icon.className = originalClass;
+            showStyledMessage('info', error.message || 'Please login to use wishlist');
+        })
+        .finally(() => {
+            buttonElement.disabled = false;
+        });
+    }
+
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Log initial cart count
+        const cartBadge = document.getElementById('cart-count');
+        if (cartBadge) {
+            console.log('Initial cart count:', cartBadge.textContent);
+        }
+    });
+</script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

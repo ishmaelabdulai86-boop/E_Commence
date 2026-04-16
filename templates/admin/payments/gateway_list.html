@@ -1,0 +1,170 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Payment Gateways - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Payment Gateway Configuration</h1>
+            <p class="text-muted mb-0">Configure and manage payment gateways</p>
+        </div>
+        <div>
+            <a href="{% url 'payments:admin_payment_dashboard' %}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar me-2"></i> Payment Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <!-- Gateway Cards -->
+    <div class="row">
+        {% for gateway in gateways %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ gateway.get_name_display }}</h6>
+                    <div>
+                        {% if gateway.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                        {% if gateway.is_test_mode %}
+                        <span class="badge bg-warning ms-1">Test Mode</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Display Name:</small>
+                        <div>{{ gateway.display_name|default:"Not set" }}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Configuration Status:</small>
+                        <div>
+                            {% if gateway.is_configured %}
+                            <span class="badge bg-success">Configured</span>
+                            {% else %}
+                            <span class="badge bg-danger">Not Configured</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Supported Currencies:</small>
+                        <div>
+                            {% for currency in gateway.supported_currencies|slice:":3" %}
+                            <span class="badge bg-info me-1">{{ currency }}</span>
+                            {% endfor %}
+                            {% if gateway.supported_currencies|length > 3 %}
+                            <span class="badge bg-secondary">+{{ gateway.supported_currencies|length|add:"-3" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted">Transaction Fee:</small>
+                        <div>
+                            {{ gateway.transaction_fee_percent }}% + ${{ gateway.transaction_fee_fixed }}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'payments:admin_gateway_detail' gateway.id %}" class="btn btn-primary">
+                                <i class="fas fa-cog me-2"></i> Configure
+                            </a>
+                            <a href="{% url 'payments:admin_payment_list' %}?gateway={{ gateway.name }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-list me-2"></i> View Transactions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted">
+                        Last updated: {{ gateway.updated_at|date:"M d, Y" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Payment Gateways Configured</h5>
+                    <p class="text-muted">Set up payment gateways to start accepting payments</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Gateway Statistics -->
+    <div class="card shadow mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Gateway Statistics</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Gateway</th>
+                            <th>Status</th>
+                            <th class="text-end">Total Transactions</th>
+                            <th class="text-end">Success Rate</th>
+                            <th class="text-end">Total Processed</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gateway in gateways %}
+                        <tr>
+                            <td>
+                                <strong>{{ gateway.get_name_display }}</strong>
+                            </td>
+                            <td>
+                                {% if gateway.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                                {% if gateway.is_test_mode %}
+                                <span class="badge bg-warning ms-1">Test</span>
+                                {% else %}
+                                <span class="badge bg-primary ms-1">Live</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <!-- Add transaction count here -->
+                                0
+                            </td>
+                            <td class="text-end">
+                                <!-- Add success rate here -->
+                                0%
+                            </td>
+                            <td class="text-end">
+                                <!-- Add total amount here -->
+                                $0.00
+                            </td>
+                            <td>
+                                {{ gateway.updated_at|date:"M d, Y" }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-3 text-muted">
+                                No gateway statistics available
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

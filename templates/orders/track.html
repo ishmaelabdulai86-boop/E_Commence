@@ -1,0 +1,1100 @@
+{% extends 'base.html' %}
+
+{% block title %}Track Order - TechStore{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section with Gradient Background -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-4">
+                <div>
+                    <h1 class="dashboard-title">Track <span class="text-gradient">Order</span></h1>
+                    <p class="subtitle mb-0">Real-time delivery updates for order #{{ order.order_number }}</p>
+                </div>
+                <div class="role-badge status-{% if order.status == 'delivered' %}delivered
+                                        {% elif order.status == 'shipped' %}shipped
+                                        {% elif order.status == 'processing' %}processing
+                                        {% elif order.status == 'pending' %}pending
+                                        {% else %}cancelled{% endif %}">
+                    {{ order.get_status_display|upper }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <div class="row g-4">
+            <!-- Sidebar Navigation -->
+            <div class="col-lg-3">
+                <div class="sidebar-wrapper">
+                    <!-- User Profile Card -->
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                {% if user.profile_picture_url %}
+                                    <img src="{{ user.profile_picture_url }}" 
+                                        alt="Profile" class="avatar-image">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="profile-info">
+                            <h5 class="profile-name">{{ user.get_full_name|default:user.username }}</h5>
+                            <p class="profile-email">{{ user.email }}</p>
+                            <div class="profile-meta">
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Member since {{ user.date_joined|date:"Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="sidebar-menu">
+                        <a href="{% url 'users:profile' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-home"></i></div>
+                            <span>Dashboard</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'orders:order_list' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-shopping-bag"></i></div>
+                            <span>My Orders</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'products:wishlist' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-heart"></i></div>
+                            <span>Wishlist</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'orders:track_order' order.order_number %}" class="menu-item active">
+                            <div class="menu-icon"><i class="fas fa-map-location-dot"></i></div>
+                            <span>Track Order</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:profile_edit' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-user-circle"></i></div>
+                            <span>Edit Profile</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'users:password_change' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-key"></i></div>
+                            <span>Change Password</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <a href="{% url 'notifications:notification_list' %}" class="menu-item">
+                            <div class="menu-icon"><i class="fas fa-bell"></i></div>
+                            <span>Notifications</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <hr>
+                        <a href="{% url 'users:logout' %}" class="menu-item menu-item-logout">
+                            <div class="menu-icon"><i class="fas fa-sign-out-alt"></i></div>
+                            <span>Logout</span>
+                            <i class="fas fa-chevron-right ms-auto"></i>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+                <!-- Order Progress Steps -->
+                <div class="progress-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Order Progress</h5>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="step {% if order.status == 'pending' or order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'delivered' %}active{% endif %}">
+                            <div class="step-circle">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="step-info">
+                                <h6 class="step-title">Order Placed</h6>
+                                {% if order.created_at %}
+                                <p class="step-date">{{ order.created_at|date:"M d, Y" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <div class="step {% if order.status == 'confirmed' or order.status == 'processing' or order.status == 'shipped' or order.status == 'delivered' %}active{% endif %}">
+                            <div class="step-circle">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div class="step-info">
+                                <h6 class="step-title">Confirmed</h6>
+                                <p class="step-date">In review</p>
+                            </div>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <div class="step {% if order.status == 'processing' or order.status == 'shipped' or order.status == 'delivered' %}active{% endif %}">
+                            <div class="step-circle">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="step-info">
+                                <h6 class="step-title">Processing</h6>
+                                <p class="step-date">Being prepared</p>
+                            </div>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <div class="step {% if order.status == 'shipped' or order.status == 'delivered' %}active{% endif %}">
+                            <div class="step-circle">
+                                <i class="fas fa-truck"></i>
+                            </div>
+                            <div class="step-info">
+                                <h6 class="step-title">Shipped</h6>
+                                {% if order.shipped_at %}
+                                <p class="step-date">{{ order.shipped_at|date:"M d, Y" }}</p>
+                                {% else %}
+                                <p class="step-date">On the way</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="step-connector"></div>
+
+                        <div class="step {% if order.status == 'delivered' %}active{% endif %}">
+                            <div class="step-circle">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <div class="step-info">
+                                <h6 class="step-title">Delivered</h6>
+                                {% if order.delivered_at %}
+                                <p class="step-date">{{ order.delivered_at|date:"M d, Y" }}</p>
+                                {% else %}
+                                <p class="step-date">Arriving soon</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout for Tracking Details -->
+                <div class="row g-4">
+                    <!-- Left Column - Tracking Timeline -->
+                    <div class="col-md-7">
+                        <div class="modern-card">
+                            <div class="card-header-custom">
+                                <h5 class="card-title">
+                                    <i class="fas fa-history me-2"></i>Tracking Timeline
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if tracking_updates %}
+                                <div class="timeline">
+                                    {% for update in tracking_updates %}
+                                    <div class="timeline-item {% if forloop.first %}timeline-current{% endif %}">
+                                        <div class="timeline-marker">
+                                            <i class="fas fa-circle"></i>
+                                        </div>
+                                        <div class="timeline-content">
+                                            <div class="content-header">
+                                                <h6 class="update-status">{{ update.status }}</h6>
+                                                <span class="update-time">
+                                                    {{ update.date|date:"M d, Y H:i" }}
+                                                </span>
+                                            </div>
+                                            <p class="update-description">{{ update.description }}</p>
+                                            {% if update.location %}
+                                            <div class="update-location">
+                                                <i class="fas fa-location-dot me-1"></i>{{ update.location }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="empty-timeline">
+                                    <i class="fas fa-box"></i>
+                                    <p>No tracking updates available yet. Check back soon!</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Estimated Delivery -->
+                        {% if order.status != 'delivered' %}
+                        <div class="modern-card mt-4">
+                            <div class="card-body">
+                                <div class="delivery-info">
+                                    <div class="delivery-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <div class="delivery-content">
+                                        <h6 class="delivery-label">Estimated Delivery</h6>
+                                        <p class="delivery-date">
+                                            {% if order.shipped_at %}
+                                            Arriving by <strong>{{ estimated_delivery|date:"F d, Y" }}</strong>
+                                            {% else %}
+                                            Shipping within <strong>24-48 hours</strong>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Right Column - Order Details -->
+                    <div class="col-md-5">
+                        <!-- Order Summary Card -->
+                        <div class="modern-card">
+                            <div class="card-header-custom">
+                                <h5 class="card-title">
+                                    <i class="fas fa-receipt me-2"></i>Order Summary
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="summary-row">
+                                    <span class="summary-label">Order Number:</span>
+                                    <span class="summary-value">{{ order.order_number }}</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Order Date:</span>
+                                    <span class="summary-value">{{ order.created_at|date:"F d, Y" }}</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Total Amount:</span>
+                                    <span class="summary-value amount">${{ order.total_amount|floatformat:2 }}</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Payment Status:</span>
+                                    <span class="summary-value">
+                                        <span class="payment-badge {% if order.payment_status == 'paid' %}payment-paid{% else %}payment-pending{% endif %}">
+                                            {{ order.get_payment_status_display }}
+                                        </span>
+                                    </span>
+                                </div>
+
+                                {% if order.tracking_number %}
+                                <div class="summary-divider"></div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Tracking #:</span>
+                                    <div class="tracking-copy">
+                                        <code>{{ order.tracking_number }}</code>
+                                        <button class="copy-btn" onclick="copyTrackingNumber()" title="Copy tracking number">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="summary-label">Carrier:</span>
+                                    <span class="summary-value">{{ order.carrier|default:"Standard Shipping" }}</span>
+                                </div>
+                                {% endif %}
+
+                                <div class="action-buttons">
+                                    <a href="{% url 'orders:order_detail' order.order_number %}" class="action-btn primary">
+                                        <i class="fas fa-file-invoice me-2"></i>View Details
+                                    </a>
+                                    <a href="{% url 'orders:download_invoice' order.order_number %}" class="action-btn secondary">
+                                        <i class="fas fa-download me-2"></i>Invoice
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shipping Address Card -->
+                        <div class="modern-card mt-4">
+                            <div class="card-header-custom">
+                                <h5 class="card-title">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Shipping Address
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="address-block">
+                                    <p class="address-line">{{ order.shipping_address }}</p>
+                                    <p class="address-line">{{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_zip_code }}</p>
+                                    <p class="address-line">{{ order.shipping_country }}</p>
+                                    <div class="address-contact">
+                                        <i class="fas fa-phone me-2"></i>{{ order.shipping_phone }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --light: #f9fafb;
+        --border: #e5e7eb;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-container {
+        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .text-gradient {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .role-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.5rem 1.25rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Sidebar */
+    .sidebar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        position: sticky;
+        top: 20px;
+    }
+
+    .profile-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+
+    .profile-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        height: 80px;
+        position: relative;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        padding: 3px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+    }
+
+    .profile-info {
+        text-align: center;
+        padding: 60px 1rem 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+
+    .profile-email {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .meta-item {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .meta-item i {
+        margin-right: 0.5rem;
+    }
+
+    /* Sidebar Menu */
+    .sidebar-menu {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        color: var(--text);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-left: 4px solid transparent;
+        font-weight: 500;
+    }
+
+    .menu-item:hover {
+        background: var(--light);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item.active {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%);
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .menu-item-logout {
+        color: var(--danger);
+    }
+
+    .menu-item-logout:hover {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .menu-icon {
+        width: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Progress Card */
+    .progress-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .card-header-custom {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--light);
+    }
+
+    .card-title {
+        color: var(--text);
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .progress-steps {
+        display: flex;
+        align-items: center;
+        padding: 2rem 1.5rem;
+        gap: 0;
+        flex-wrap: wrap;
+    }
+
+    .step {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .step-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--light);
+        border: 3px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+
+    .step.active .step-circle {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-color: transparent;
+        color: white;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .step-info {
+        flex-grow: 1;
+    }
+
+    .step-title {
+        font-weight: 700;
+        color: var(--text);
+        margin: 0 0 0.25rem 0;
+        font-size: 0.85rem;
+    }
+
+    .step-date {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .step.active .step-title {
+        color: var(--primary);
+    }
+
+    .step-connector {
+        flex: 1;
+        height: 3px;
+        background: var(--border);
+        margin: 0 0.5rem 2rem 0.5rem;
+        position: relative;
+    }
+
+    .step:last-child .step-connector {
+        display: none;
+    }
+
+    /* Modern Card */
+    .modern-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .modern-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    /* Timeline */
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: linear-gradient(180deg, var(--primary) 0%, var(--border) 100%);
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+    }
+
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -13px;
+        top: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid var(--border);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        color: var(--text-muted);
+    }
+
+    .timeline-item.timeline-current .timeline-marker {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.1);
+    }
+
+    .timeline-content {
+        padding-left: 1rem;
+    }
+
+    .content-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .update-status {
+        color: var(--text);
+        font-weight: 600;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .update-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .update-description {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin: 0.5rem 0 0.5rem 0;
+    }
+
+    .update-location {
+        font-size: 0.8rem;
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .empty-timeline {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+
+    .empty-timeline i {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    /* Delivery Info */
+    .delivery-info {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .delivery-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        background: rgba(16, 185, 129, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--success);
+        flex-shrink: 0;
+    }
+
+    .delivery-label {
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .delivery-date {
+        color: var(--text);
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    /* Summary Section */
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-label {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .summary-value {
+        color: var(--text);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .summary-value.amount {
+        color: var(--primary);
+        font-size: 1rem;
+    }
+
+    .summary-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 1rem 0;
+    }
+
+    .tracking-copy {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .tracking-copy code {
+        background: var(--light);
+        padding: 0.4rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .copy-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        transition: all 0.2s ease;
+        font-size: 0.8rem;
+    }
+
+    .copy-btn:hover {
+        background: var(--light);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .action-btn {
+        flex: 1;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .action-btn.primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        color: white;
+    }
+
+    .action-btn.secondary {
+        background: var(--light);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .action-btn.secondary:hover {
+        background: white;
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    /* Address Block */
+    .address-block {
+        background: var(--light);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .address-line {
+        color: var(--text);
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .address-line:last-of-type {
+        margin-bottom: 1rem;
+    }
+
+    .address-contact {
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    /* Payment Badge */
+    .payment-badge {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .payment-paid {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+    }
+
+    .payment-pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warning);
+    }
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .sidebar-wrapper {
+            position: static;
+            margin-bottom: 1rem;
+        }
+        
+        .progress-steps {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            gap: 1rem;
+        }
+        
+        .step {
+            min-width: 100px;
+        }
+        
+        .step-connector {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-title {
+            font-size: 1.5rem;
+        }
+        
+        .role-badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 1rem;
+        }
+        
+        .progress-steps {
+            padding: 1.5rem;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
+        
+        .step-title {
+            font-size: 0.75rem;
+        }
+        
+        .content-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .summary-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .tracking-copy {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .dashboard-title {
+            font-size: 1.25rem;
+        }
+        
+        .delivery-info {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+
+<script>
+    function copyTrackingNumber() {
+        const trackingNumber = '{{ order.tracking_number }}';
+        if (trackingNumber) {
+            navigator.clipboard.writeText(trackingNumber).then(function() {
+                showNotification('Tracking number copied to clipboard!', 'success');
+            }).catch(function() {
+                showNotification('Failed to copy tracking number', 'danger');
+            });
+        }
+    }
+
+    function showNotification(message, type) {
+        let container = document.querySelector('.messages-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'messages-container';
+            container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            document.body.appendChild(container);
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.style.cssText = 'margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px;';
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        container.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) alertDiv.remove();
+        }, 4000);
+    }
+
+    // Auto-refresh tracking info every 30 seconds
+    let refreshInterval = setInterval(function() {
+        fetch(window.location.href + '?refresh=true')
+            .then(response => response.text())
+            .then(html => {
+                // Check if status changed by looking for updated status badge
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                const newStatus = newDoc.querySelector('.role-badge')?.textContent;
+                const currentStatus = document.querySelector('.role-badge')?.textContent;
+                
+                if (newStatus !== currentStatus) {
+                    location.reload();
+                }
+            })
+            .catch(error => console.log('Tracking update check:', error));
+    }, 30000);
+
+    // Cleanup interval on page unload
+    window.addEventListener('beforeunload', function() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+    });
+</script>
+{% endblock %}

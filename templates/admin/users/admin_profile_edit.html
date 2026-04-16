@@ -1,0 +1,284 @@
+{% extends 'admin/admin_base.html' %}
+{% load static %}
+
+{% block title %}Edit Admin Profile - TechStore Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-2">
+                        <i class="fas fa-user-edit me-2 text-primary"></i>Edit Admin Profile
+                    </h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{% url 'analytics:analytics_dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'users:admin_profile' %}">Admin Profile</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                        </ol>
+                    </nav>
+                </div>
+                <a href="{% url 'users:admin_profile' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Profile Edit Form -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2 text-primary"></i>Personal Information
+                    </h5>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <!-- Profile Picture Section -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>Profile Picture</strong></label>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        {% if admin_user.profile_picture_url %}
+                                        <img src="{{ admin_user.profile_picture_url }}" id="profilePreview"
+                                             class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover; border: 4px solid #e5e7eb;">
+                                        {% else %}
+                                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" 
+                                             id="profilePreview" style="width: 150px; height: 150px; color: #9ca3af; font-size: 48px; border: 4px dashed #e5e7eb;">
+                                            <i class="fas fa-user-shield"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="mb-3">
+                                        <input type="file" class="form-control" id="profilePictureInput" 
+                                               name="profile_picture" accept="image/*">
+                                        <small class="text-muted d-block mt-2">
+                                            Recommended size: 300x300px. Max size: 2MB
+                                        </small>
+                                    </div>
+                                    {% if admin_user.profile_picture %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="removeCheckbox" name="remove_picture">
+                                        <label class="form-check-label" for="removeCheckbox">
+                                            Remove current picture
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Personal Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="firstName" class="form-label"><strong>First Name</strong></label>
+                                <input type="text" class="form-control" id="firstName" name="first_name" 
+                                       value="{{ admin_user.first_name }}" placeholder="Enter first name">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="lastName" class="form-label"><strong>Last Name</strong></label>
+                                <input type="text" class="form-control" id="lastName" name="last_name" 
+                                       value="{{ admin_user.last_name }}" placeholder="Enter last name">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="email" class="form-label"><strong>Email Address</strong></label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ admin_user.email }}" placeholder="Enter email address" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label"><strong>Phone Number</strong></label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ admin_user.phone }}" placeholder="Enter phone number">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label"><strong>Username</strong></label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ admin_user.username }}" readonly>
+                            <small class="text-muted">Username cannot be changed</small>
+                        </div>
+
+                        <hr>
+
+                        <!-- Account Information (Read-only) -->
+                        <div class="bg-light p-3 rounded-2 mb-3">
+                            <h6 class="mb-3"><i class="fas fa-info-circle me-2 text-info"></i>Account Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Role:</strong> 
+                                        <span class="badge bg-{% if admin_user.is_superuser %}danger{% elif role == 'admin' %}primary{% else %}warning{% endif %}">
+                                            {{ admin_user.get_role_display|upper }}
+                                        </span>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Member Since:</strong> {{ admin_user.date_joined|date:"M d, Y" }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Email Verified:</strong> 
+                                        <span class="badge bg-{% if admin_user.email_verified %}success{% else %}danger{% endif %}">
+                                            {% if admin_user.email_verified %}Verified{% else %}Pending{% endif %}
+                                        </span>
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Status:</strong> 
+                                        <span class="badge bg-{% if admin_user.is_active %}success{% else %}danger{% endif %}">
+                                            {% if admin_user.is_active %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Changes
+                        </button>
+                        <a href="{% url 'users:admin_profile' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Security & Settings Sidebar -->
+        <div class="col-lg-4">
+            <!-- Change Password Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lock me-2 text-danger"></i>Security
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        <small>Manage your security settings and change your password.</small>
+                    </p>
+                    <a href="{% url 'users:password_change' %}" class="btn btn-outline-danger w-100">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </a>
+                </div>
+            </div>
+
+            <!-- Preferences Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sliders-h me-2 text-primary"></i>Preferences
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                        <label class="form-check-label" for="emailNotifications">
+                            <strong>Email Notifications</strong>
+                            <small class="d-block text-muted">Receive important alerts via email</small>
+                        </label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="smsNotifications">
+                        <label class="form-check-label" for="smsNotifications">
+                            <strong>SMS Notifications</strong>
+                            <small class="d-block text-muted">Receive alerts via SMS</small>
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="twoFactor">
+                        <label class="form-check-label" for="twoFactor">
+                            <strong>Two-Factor Authentication</strong>
+                            <small class="d-block text-muted">Enhanced security for your account</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Info Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-shield me-2 text-primary"></i>Admin Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled text-sm">
+                        <li class="mb-2"><strong>Username:</strong> {{ admin_user.username }}</li>
+                        <li class="mb-2"><strong>Status:</strong> <span class="badge bg-{% if admin_user.is_active %}success{% else %}danger{% endif %}">{% if admin_user.is_active %}Active{% else %}Inactive{% endif %}</span></li>
+                        <li class="mb-2"><strong>Role:</strong> {{ admin_user.get_role_display|upper }}</li>
+                        <li class="mb-2"><strong>Staff Member:</strong> <i class="fas fa-{% if admin_user.is_staff %}check text-success{% else %}times text-danger{% endif %}"></i></li>
+                        <li class="mb-0"><strong>Last Login:</strong> {% if admin_user.last_login %}{{ admin_user.last_login|date:"M d H:i" }}{% else %}Never{% endif %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Profile picture preview
+    document.getElementById('profilePictureInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const preview = document.getElementById('profilePreview');
+                preview.style.backgroundImage = 'url(' + event.target.result + ')';
+                preview.style.backgroundSize = 'cover';
+                preview.style.backgroundPosition = 'center';
+                preview.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Remove picture checkbox
+    const removeCheckbox = document.getElementById('removeCheckbox');
+    if (removeCheckbox) {
+        removeCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                document.getElementById('profilePreview').innerHTML = '<i class="fas fa-trash text-danger" style="font-size: 48px;"></i>';
+            }
+        });
+    }
+</script>
+
+<style>
+    .text-sm {
+        font-size: 0.875rem;
+    }
+
+    #profilePreview {
+        transition: all 0.3s ease;
+    }
+
+    #profilePreview:hover {
+        transform: scale(1.05);
+    }
+
+    .form-check-input {
+        width: 1.5em;
+        height: 1.5em;
+    }
+
+    .form-switch .form-check-input {
+        width: 2.5em;
+    }
+</style>
+{% endblock %}
