@@ -42,11 +42,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-)_wel-xh9en$#*h&p3wa+$6ki+
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 #ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
-ALLOWED_HOSTS = [ '127.0.0.1', 'localhost', 'ecommence-production.up.railway.app', '.up.railway.app' ]
+ALLOWED_HOSTS = [ '127.0.0.1', 'localhost', 'e-commence-8tu5.onrender.com' ]
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
-CSRF_TRUSTED_ORIGINS = ["https://ecommence-production.up.railway.app"]
+CSRF_TRUSTED_ORIGINS = ["https://e-commence-8tu5.onrender.com"]
 
 # Application definition
 
