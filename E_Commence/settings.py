@@ -247,7 +247,7 @@ SERVER_EMAIL = os.getenv('SERVER_EMAIL')
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Site Configuration
 SITE_NAME = os.getenv('SITE_NAME', 'TechStore')
-SITE_URL = 'https://ecommence-production.up.railway.app'
+SITE_URL = "https://e-commence-8tu5.onrender.com"
 #SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
 
 # Custom color scheme
