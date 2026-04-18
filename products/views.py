@@ -483,7 +483,7 @@ def toggle_wishlist(request, product_id):
             return JsonResponse({'success': False, 'message': 'Product not found'})
     
     return JsonResponse({'success': False, 'message': 'Invalid request'})
-
+    
 @login_required
 def check_wishlist(request, product_id):
     """Check if product is in wishlist"""
