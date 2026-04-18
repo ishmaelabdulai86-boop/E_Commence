@@ -36,6 +36,5 @@ urlpatterns = [
     path('manage/orders/<str:order_number>/modal/', views.admin_order_detail_modal, name='admin_order_detail_modal'),
     path('manage/orders/<str:order_number>/delete/', views.admin_order_delete, name='admin_order_delete'),
 
-    # Add this to your urlpatterns
     
 ]
