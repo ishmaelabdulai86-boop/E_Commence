@@ -387,62 +387,114 @@ def api_template_preview(request, template_id):
 def admin_notification_dashboard(request):
     """Admin dashboard for notifications"""
     
-    # Get SMS provider status
-    service = NotificationService()
+    # Get SMS provider status with proper error handling
+    try:
+        service = NotificationService()
+        # Access the property safely
+        twilio_enabled = getattr(service, 'twilio_enabled', False)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error initializing NotificationService: {e}")
+        twilio_enabled = False
+    
+    # Get Twilio settings safely (handling None values)
+    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+    if account_sid is None or account_sid == '':
+        account_sid_display = 'Not set'
+    elif isinstance(account_sid, str) and len(account_sid) > 10:
+        account_sid_display = account_sid[:10] + '...'
+    else:
+        account_sid_display = 'Invalid format'
+    
+    phone_number = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+    if phone_number is None or phone_number == '':
+        phone_number_display = 'Not set'
+    else:
+        phone_number_display = str(phone_number)
+    
     sms_provider_status = {
-        'enabled': service.twilio_enabled,
-        'provider': 'Twilio' if service.twilio_enabled else 'Simulated (Development Mode)',
-        'account_sid': getattr(settings, 'TWILIO_ACCOUNT_SID', 'Not set')[:10] + '...' if getattr(settings, 'TWILIO_ACCOUNT_SID', '') and len(getattr(settings, 'TWILIO_ACCOUNT_SID', '')) > 10 else 'Not set',
-        'phone_number': getattr(settings, 'TWILIO_PHONE_NUMBER', 'Not set'),
+        'enabled': twilio_enabled,
+        'provider': 'Twilio' if twilio_enabled else 'Simulated (Development Mode)',
+        'account_sid': account_sid_display,
+        'phone_number': phone_number_display,
     }
     
-    # Statistics
-    stats = {
-        'total_notifications': Notification.objects.count(),
-        'unread_notifications': Notification.objects.filter(is_read=False).count(),
-        'sent_today': Notification.objects.filter(
-            sent_at__date=timezone.now().date()
-        ).count(),
-        'failed_notifications': Notification.objects.filter(status='failed').count(),
-        'total_users_with_notifications': Notification.objects.values('user').distinct().count(),
-        'recent_notifications': Notification.objects.order_by('-created_at')[:10],
-    }
+    # Statistics with error handling
+    try:
+        stats = {
+            'total_notifications': Notification.objects.count(),
+            'unread_notifications': Notification.objects.filter(is_read=False).count(),
+            'sent_today': Notification.objects.filter(
+                sent_at__date=timezone.now().date()
+            ).count(),
+            'failed_notifications': Notification.objects.filter(status='failed').count(),
+            'total_users_with_notifications': Notification.objects.values('user').distinct().count(),
+            'recent_notifications': Notification.objects.order_by('-created_at')[:10],
+        }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching notification stats: {e}")
+        stats = {
+            'total_notifications': 0,
+            'unread_notifications': 0,
+            'sent_today': 0,
+            'failed_notifications': 0,
+            'total_users_with_notifications': 0,
+            'recent_notifications': [],
+        }
     
-    # Chart data (last 30 days)
+    # Chart data (last 30 days) with error handling
     thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
     
-    notification_trends = Notification.objects.filter(
-        created_at__gte=thirty_days_ago
-    ).extra({
-        'date': "DATE(created_at)"
-    }).values('date').annotate(
-        count=Count('id'),
-        email_count=Count('id', filter=Q(notification_type='email')),
-        sms_count=Count('id', filter=Q(notification_type='sms')),
-        push_count=Count('id', filter=Q(notification_type='push'))
-    ).order_by('date')
+    try:
+        notification_trends = Notification.objects.filter(
+            created_at__gte=thirty_days_ago
+        ).extra({
+            'date': "DATE(created_at)"
+        }).values('date').annotate(
+            count=Count('id'),
+            email_count=Count('id', filter=Q(notification_type='email')),
+            sms_count=Count('id', filter=Q(notification_type='sms')),
+            push_count=Count('id', filter=Q(notification_type='push'))
+        ).order_by('date')
+        notification_trends = list(notification_trends)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching notification trends: {e}")
+        notification_trends = []
     
-    # Top notification types
-    notification_by_type = Notification.objects.values(
-        'notification_type'
-    ).annotate(
-        count=Count('id')
-    ).order_by('-count')
+    # Top notification types with error handling
+    try:
+        notification_by_type = Notification.objects.values(
+            'notification_type'
+        ).annotate(
+            count=Count('id')
+        ).order_by('-count')
+        notification_by_type = list(notification_by_type)
+    except Exception:
+        notification_by_type = []
     
-    # Top notification categories
-    notification_by_category = Notification.objects.filter(
-        template__isnull=False
-    ).values(
-        'template__category'
-    ).annotate(
-        count=Count('id')
-    ).order_by('-count')
+    # Top notification categories with error handling
+    try:
+        notification_by_category = Notification.objects.filter(
+            template__isnull=False
+        ).values(
+            'template__category'
+        ).annotate(
+            count=Count('id')
+        ).order_by('-count')
+        notification_by_category = list(notification_by_category)
+    except Exception:
+        notification_by_category = []
     
     context = {
         'stats': stats,
-        'notification_trends': list(notification_trends),
-        'notification_by_type': list(notification_by_type),
-        'notification_by_category': list(notification_by_category),
+        'notification_trends': notification_trends,
+        'notification_by_type': notification_by_type,
+        'notification_by_category': notification_by_category,
         'sms_provider_status': sms_provider_status,
     }
     

@@ -39,6 +39,7 @@ class NotificationService:
         self.twilio_enabled = self._is_twilio_configured()
     
     def _is_twilio_configured(self):
+        
         """Check if Twilio credentials are properly configured (not placeholder values)"""
         if not Client:
             return False
@@ -47,35 +48,59 @@ class NotificationService:
         auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
         phone_number = getattr(settings, 'TWILIO_PHONE_NUMBER', '')
         
+        # Convert None values to empty strings safely
+        account_sid = account_sid if account_sid is not None else ''
+        auth_token = auth_token if auth_token is not None else ''
+        phone_number = phone_number if phone_number is not None else ''
+        
         # Check if credentials are set and not placeholder values
-        # These are test/placeholder values used for development
         placeholder_values = [
-            '', # This is a test SID from Twilio docs
-            '', # This is a test Auth Token from Twilio docs
-            '', # This is a test phone number from Twilio docs
-            
+            'your_account_sid',
+            'your_auth_token',
+            'your_twilio_phone_number',
+            'acctwiliosampleaccountsid123',  # Test SID from Twilio docs
+            'authtokensample123',             # Test Auth Token
+            '+1234567890',                    # Test phone number
+            ''
         ]
         
-        # Convert all values to lowercase for comparison
-        credentials_lower = [val.lower() for val in [account_sid, auth_token, phone_number]]
-        
-        if any(val in placeholder_values for val in credentials_lower):
-            logger.warning("Twilio credentials appear to be placeholder values. SMS will be mocked.")
-            return False
-        
-        if not (account_sid and auth_token and phone_number):
-            logger.warning("Twilio credentials not fully configured. SMS will be mocked.")
-            return False
-        
-        # Try to initialize client
+        # Safely convert to lowercase (only if it's a string, which it is after our conversion)
         try:
-            self.twilio_client = Client(account_sid, auth_token)
-            logger.info("✓ Twilio client initialized successfully")
-            return True
-        except Exception as e:
-            logger.warning(f"Failed to initialize Twilio client: {str(e)}. SMS will be mocked.")
+            account_sid_lower = account_sid.lower() if account_sid else ''
+            auth_token_lower = auth_token.lower() if auth_token else ''
+            phone_number_lower = phone_number.lower() if phone_number else ''
+            
+            # Check if any credential is a placeholder
+            if account_sid_lower in placeholder_values or \
+            auth_token_lower in placeholder_values or \
+            phone_number_lower in placeholder_values:
+                logger.warning("Twilio credentials appear to be placeholder values. SMS will be mocked.")
+                return False
+            
+            # Check if all credentials are present
+            if not (account_sid and auth_token and phone_number):
+                logger.warning("Twilio credentials not fully configured. SMS will be mocked.")
+                return False
+            
+            # Additional validation for Twilio SID format (starts with 'AC')
+            if not account_sid.startswith('AC') or len(account_sid) < 20:
+                logger.warning("Twilio Account SID appears invalid. SMS will be mocked.")
+                return False
+            
+            # Try to initialize client
+            try:
+                self.twilio_client = Client(account_sid, auth_token)
+                logger.info("✓ Twilio client initialized successfully")
+                return True
+            except Exception as e:
+                logger.warning(f"Failed to initialize Twilio client: {str(e)}. SMS will be mocked.")
+                return False
+                
+        except AttributeError as e:
+            logger.warning(f"Error checking Twilio credentials: {str(e)}. SMS will be mocked.")
             return False
-    
+        
+        
     def _sanitize_context(self, context):
         """
         Remove non-serializable objects from context dict for storage in JSONField.
