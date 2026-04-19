@@ -475,14 +475,27 @@ def add_to_wishlist(request, product_id):
             )
             
             if created:
-                return JsonResponse({'success': True, 'action': 'added', 'message': 'Added to wishlist'})
+                return JsonResponse({
+                    'success': True, 
+                    'action': 'added', 
+                    'message': f'{product.name} added to wishlist successfully! ❤️'
+                })
             else:
-                return JsonResponse({'success': False, 'message': 'Already in wishlist'})
+                return JsonResponse({
+                    'success': False, 
+                    'message': f'{product.name} is already in your wishlist'
+                })
         
         except Product.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Product not found'})
+            return JsonResponse({
+                'success': False, 
+                'message': 'Product not found'
+            })
     
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
+    return JsonResponse({
+        'success': False, 
+        'message': 'Invalid request'
+    })
 
 @login_required
 @ratelimit(key='user', rate='10/m')
@@ -494,15 +507,26 @@ def remove_from_wishlist(request, product_id):
                 user=request.user,
                 product_id=product_id
             )
+            product_name = wishlist_item.product.name
             wishlist_item.delete()
             
-            return JsonResponse({'success': True, 'action': 'removed', 'message': 'Removed from wishlist'})
+            return JsonResponse({
+                'success': True, 
+                'action': 'removed', 
+                'message': f'{product_name} removed from wishlist'
+            })
         
         except Wishlist.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Item not in wishlist'})
+            return JsonResponse({
+                'success': False, 
+                'message': 'Item not in wishlist'
+            })
     
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
-
+    return JsonResponse({
+        'success': False, 
+        'message': 'Invalid request'
+    })
+    
 @login_required
 @ratelimit(key='user', rate='10/m')
 def toggle_wishlist(request, product_id):
@@ -516,16 +540,30 @@ def toggle_wishlist(request, product_id):
             )
             
             if created:
-                return JsonResponse({'success': True, 'action': 'added'})
+                return JsonResponse({
+                    'success': True, 
+                    'action': 'added',
+                    'message': f'{product.name} added to wishlist successfully! ❤️'
+                })
             else:
                 wishlist_item.delete()
-                return JsonResponse({'success': True, 'action': 'removed'})
+                return JsonResponse({
+                    'success': True, 
+                    'action': 'removed',
+                    'message': f'{product.name} removed from wishlist'
+                })
         
         except Product.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Product not found'})
+            return JsonResponse({
+                'success': False, 
+                'message': 'Product not found'
+            })
     
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
-    
+    return JsonResponse({
+        'success': False, 
+        'message': 'Invalid request'
+    })
+        
 @login_required
 def check_wishlist(request, product_id):
     """Check if product is in wishlist"""
