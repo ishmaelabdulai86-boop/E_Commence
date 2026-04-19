@@ -440,8 +440,6 @@
     </div>
 </div>
 
-<!-- Replace the entire script section at the bottom of your file with this -->
-
 <script>
     // Helper to get CSRF token
     function getCSRFToken() {
@@ -508,23 +506,30 @@
         }, 5000);
     }
 
-
-    // Wishlist toggle function - USING THE CORRECT URL
-    async function toggleWishlist(productId, buttonElement) {
+    // Wishlist toggle function
+    function setupWishlistButton(button) {
+        const productId = button.getAttribute('data-product-id');
         if (!productId) return;
         
-        const icon = buttonElement.querySelector('i');
-        const originalClass = icon.className;
+        // Remove any existing event listeners
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
         
-        // Show loading state
-        icon.className = 'fas fa-spinner fa-pulse';
-        buttonElement.disabled = true;
-        
-        // Use the correct URL pattern - FIXED
-        const toggleUrl = `/products/wishlist/toggle/${productId}/`;
-        
-        try {
-            const response = await fetch(toggleUrl, {
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const icon = this.querySelector('i');
+            const isFilled = icon.classList.contains('fas');
+            const originalIconClass = icon.className;
+            
+            // Show loading state
+            icon.className = 'fas fa-spinner fa-pulse';
+            this.disabled = true;
+            
+            const toggleUrl = `/products/wishlist/toggle/${productId}/`;
+            
+            fetch(toggleUrl, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCSRFToken(),
@@ -532,59 +537,89 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin'
-            });
-            
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                // If redirected to login page
-                if (response.redirected || response.status === 302) {
-                    showToast('Please log in to use wishlist', 'warning');
+            })
+            .then(response => {
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error('login_required');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (data.action === 'added') {
+                        icon.className = 'fas fa-heart';
+                        this.style.color = '#ef4444';
+                        showToast(data.message || 'Added to wishlist!', 'success');
+                    } else if (data.action === 'removed') {
+                        icon.className = 'far fa-heart';
+                        this.style.color = '';
+                        showToast(data.message || 'Removed from wishlist', 'info');
+                    }
+                } else {
+                    icon.className = originalIconClass;
+                    showToast(data.message || 'Could not update wishlist', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Wishlist error:', error);
+                icon.className = originalIconClass;
+                if (error.message === 'login_required') {
+                    showToast('Please login to use wishlist', 'warning');
                     setTimeout(() => {
-                        window.location.href = "{% url 'users:login' %}?next={{ request.path }}";
+                        window.location.href = "/users/login/?next=" + encodeURIComponent(window.location.pathname);
                     }, 1500);
-                    icon.className = originalClass;
-                    buttonElement.disabled = false;
-                    return;
+                } else {
+                    showToast('Network error. Please try again.', 'error');
                 }
-                throw new Error('Server error');
-            }
-            
-            const data = await response.json();
-            
-            if (data && data.success) {
-                if (data.action === 'added') {
-                    icon.className = 'fas fa-heart';
-                    buttonElement.style.color = '#ef4444';
-                    showToast('Added to wishlist!', 'success');
-                } else if (data.action === 'removed') {
-                    icon.className = 'far fa-heart';
-                    buttonElement.style.color = '';
-                    showToast('Removed from wishlist', 'info');
-                }
-            } else {
-                icon.className = originalClass;
-                showToast(data?.message || 'Could not update wishlist', 'danger');
-            }
-        } catch (error) {
-            console.error('Wishlist error:', error);
-            icon.className = originalClass;
-            showToast(error.message || 'Network error. Please try again.', 'danger');
-        } finally {
-            buttonElement.disabled = false;
-        }
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
     }
 
-    // Initialize all buttons when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM loaded, initializing product page buttons...');
+    // Check wishlist status on page load
+    function checkWishlistStatus() {
+        const wishlistButtons = document.querySelectorAll('.wishlist-btn');
         
-        // Initialize Add to Cart buttons
+        wishlistButtons.forEach(button => {
+            const productId = button.getAttribute('data-product-id');
+            if (!productId) return;
+            
+            const checkUrl = `/products/wishlist/check/${productId}/`;
+            
+            fetch(checkUrl, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.status === 403 || response.status === 401) {
+                    return { in_wishlist: false };
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.in_wishlist) {
+                    const icon = button.querySelector('i');
+                    icon.className = 'fas fa-heart';
+                    button.style.color = '#ef4444';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking wishlist:', error);
+            });
+        });
+    }
+
+    // Initialize Add to Cart buttons
+    function setupCartButtons() {
         const cartButtons = document.querySelectorAll('.btn-add-to-cart');
-        console.log('Found Add to Cart buttons:', cartButtons.length);
         
         cartButtons.forEach(button => {
-            // Remove any existing event listeners
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
@@ -593,52 +628,65 @@
                 e.stopPropagation();
                 const productId = this.getAttribute('data-product-id');
                 if (productId && !this.disabled) {
-                    // Use the global addToCart function from base.html
-                    if (typeof addToCart === 'function') {
-                        addToCart(productId, this);
-                    } else {
-                        console.error('addToCart function not found!');
-                        showToast('Please refresh the page and try again.', 'danger');
-                    }
+                    const url = `/cart/add/${productId}/`;
+                    const originalHtml = this.innerHTML;
+                    
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                    this.disabled = true;
+                    
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCSRFToken(),
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ quantity: 1 })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast(data.message || 'Added to cart!', 'success');
+                            if (data.cart_count) {
+                                document.querySelectorAll('.cart-count, #cart-count').forEach(el => {
+                                    if (el) el.textContent = data.cart_count;
+                                });
+                            }
+                        } else {
+                            showToast(data.message || 'Failed to add to cart', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showToast('Network error', 'error');
+                    })
+                    .finally(() => {
+                        this.innerHTML = originalHtml;
+                        this.disabled = false;
+                    });
                 }
             });
         });
+    }
+
+    // Initialize all buttons when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing...');
         
-        // Initialize Wishlist buttons
+        // Setup cart buttons
+        setupCartButtons();
+        
+        // Setup wishlist buttons
         const wishlistButtons = document.querySelectorAll('.wishlist-btn');
-        console.log('Found Wishlist buttons:', wishlistButtons.length);
-        
         wishlistButtons.forEach(button => {
-            // Ensure product ID is set
-            let productId = button.getAttribute('data-product-id');
-            if (!productId) {
-                const card = button.closest('.product-card');
-                if (card) {
-                    const cartBtn = card.querySelector('.btn-add-to-cart');
-                    if (cartBtn && cartBtn.getAttribute('data-product-id')) {
-                        productId = cartBtn.getAttribute('data-product-id');
-                        button.setAttribute('data-product-id', productId);
-                    }
-                }
-            }
-            
-            // Remove any existing event listeners
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
-            
-            newButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const pid = this.getAttribute('data-product-id');
-                if (pid) {
-                    console.log('Toggling wishlist for product:', pid);
-                    toggleWishlist(pid, this);
-                } else {
-                    console.error('Product ID not found for wishlist button');
-                    showToast('Error: Product ID not found', 'danger');
-                }
-            });
+            setupWishlistButton(button);
         });
+        
+        // Check wishlist status for logged-in users
+        const isLoggedIn = document.body.getAttribute('data-user-logged-in') === 'true';
+        if (isLoggedIn) {
+            checkWishlistStatus();
+        }
     });
 </script>
 
