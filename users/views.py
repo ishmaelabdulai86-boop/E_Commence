@@ -255,41 +255,52 @@ def forgot_password(request):
         try:
             user = User.objects.get(email=email)
             
-            # Generate reset token
-            token = jwt.encode(
-                {
-                    'user_id': user.id,
-                    'exp': timezone.now() + timedelta(hours=1)
-                },
-                settings.SECRET_KEY,
-                algorithm='HS256'
-            )
+            # Generate reset token using Django's built-in password reset system
+            from django.contrib.auth.tokens import default_token_generator
+            from django.utils.http import urlsafe_base64_encode
+            from django.utils.encoding import force_bytes
+            
+            # Create token and uid
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            
+            # Use SITE_URL from settings
+            site_url = settings.SITE_URL.rstrip('/')
+            
+            # Remove protocol from site_url to get domain
+            if site_url.startswith('https://'):
+                protocol = 'https'
+                domain = site_url.replace('https://', '')
+            elif site_url.startswith('http://'):
+                protocol = 'http'
+                domain = site_url.replace('http://', '')
+            else:
+                protocol = 'https'
+                domain = site_url
             
             # Send reset email
-            reset_url = f"{settings.SITE_URL}/users/reset-password/{token}/"
+            from django.core.mail import send_mail
+            from django.template.loader import render_to_string
+            from django.utils.html import strip_tags
             
-            subject = 'Reset Your Password'
-            message = f'''
-            Hi {user.username},
+            html_message = render_to_string('users/password_reset_email.html', {
+                'user': user,
+                'protocol': protocol,
+                'domain': domain,
+                'uid': uid,
+                'token': token,
+            })
+            plain_message = strip_tags(html_message)
             
-            You requested to reset your password. Click the link below:
-            
-            {reset_url}
-            
-            This link will expire in 1 hour.
-            
-            If you didn't request this, please ignore this email.
-            
-            Best regards,
-            TechStore Team
-            '''
+            subject = 'Reset Your Password - TechStore'
             
             send_mail(
                 subject,
-                message,
+                plain_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=html_message,
             )
             
             messages.success(request, 'Password reset instructions sent to your email.')
@@ -300,18 +311,18 @@ def forgot_password(request):
     
     return render(request, 'users/forgot_password.html')
 
-def reset_password(request, token):
-    """Custom reset password view"""
-    
-    # Verify token
-    valid_token = False
-    user_id = None
+def reset_password(request, uidb64, token):
+    """Custom reset password view using Django's built-in token system"""
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.http import urlsafe_base64_decode
+    from django.utils.encoding import force_str
     
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        user_id = payload['user_id']
-        valid_token = True
-    except (jwt.ExpiredSignatureError, jwt.DecodeError):
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+        valid_token = default_token_generator.check_token(user, token)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
         valid_token = False
     
     if request.method == 'POST' and valid_token:
@@ -323,22 +334,20 @@ def reset_password(request, token):
         elif len(new_password1) < 8:
             messages.error(request, 'Password must be at least 8 characters long.')
         else:
-            try:
-                user = User.objects.get(id=user_id)
-                user.set_password(new_password1)
-                user.save()
-                
-                messages.success(request, 'Password reset successfully. You can now log in.')
-                return redirect('users:login')
-            except User.DoesNotExist:
-                messages.error(request, 'Invalid reset token.')
+            user.set_password(new_password1)
+            user.save()
+            
+            messages.success(request, 'Password reset successfully. You can now log in with your new password.')
+            return redirect('users:login')
     
     context = {
         'valid_token': valid_token,
+        'uidb64': uidb64,
         'token': token,
     }
     
     return render(request, 'users/password_reset.html', context)
+
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
