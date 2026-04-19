@@ -309,7 +309,7 @@ def forgot_password(request):
         except User.DoesNotExist:
             messages.error(request, 'No account found with this email address.')
     
-    return render(request, 'users/password_reset_form.html')
+    return render(request, 'users/forgot_password.html')
 
 def reset_password(request, uidb64, token):
     """Custom reset password view using Django's built-in token system"""

@@ -18,7 +18,7 @@ urlpatterns = [
     # Password reset using Django's built-in views (RECOMMENDED)
     path('forgot-password/', 
         auth_views.PasswordResetView.as_view(
-            template_name='users/password_reset_form.html',
+            template_name='users/forgot_password.html',
             email_template_name='users/password_reset_email.html',
             subject_template_name='users/password_reset_subject.txt',
             success_url=reverse_lazy('users:password_reset_done')
