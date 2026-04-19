@@ -296,9 +296,11 @@
                                 {% endif %}
 
                                 <div class="action-buttons">
-                                    <a href="{% url 'orders:order_detail' order.order_number %}" class="action-btn primary">
+                                    <!---
+                                    <a href="{% url 'orders:order_list' %}" class="action-btn primary">
                                         <i class="fas fa-file-invoice me-2"></i>View Details
                                     </a>
+                                    --->
                                     <a href="{% url 'orders:download_invoice' order.order_number %}" class="action-btn secondary">
                                         <i class="fas fa-download me-2"></i>Invoice
                                     </a>
