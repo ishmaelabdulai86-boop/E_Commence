@@ -1,469 +1,204 @@
-{% extends 'base.html' %}
-
-{% block title %}Products - TechStore{% endblock %}
-
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <!-- Sidebar Filters -->
-        <div class="col-lg-3">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Categories</h5>
-                    <ul class="list-unstyled">
-                        <li>
-                            <a href="{% url 'products:product_list' %}" 
-                            class="text-decoration-none d-flex justify-content-between align-items-center py-1">
-                                <span>All Categories</span>
-                                <span class="badge bg-primary rounded-pill">
-                                    {% if total_categories %}
-                                        {{ total_categories }} 
-                                    {% else %}
-                                        {{ categories|length }} 
-                                    {% endif %}
-                                </span>
-                            </a>
-                        </li>
-                        {% for cat in categories %}
-                        <li>
-                            <a href="{% url 'products:product_list_by_category' cat.slug %}" 
-                            class="text-decoration-none d-flex justify-content-between align-items-center py-1">
-                                <span>{{ cat.name }}</span>
-                                <span class="badge bg-primary rounded-pill">{{ cat.product_count }}</span>
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Price Range</h5>
-                    <div class="mb-3">
-                        <label for="minPrice" class="form-label">Min: $<span id="minPriceValue">0</span></label>
-                        <input type="range" class="form-range" id="minPrice" min="0" max="1000" value="0">
-                    </div>
-                    <div class="mb-3">
-                        <label for="maxPrice" class="form-label">Max: $<span id="maxPriceValue">1000</span></label>
-                        <input type="range" class="form-range" id="maxPrice" min="0" max="1000" value="1000">
-                    </div>
-                    <button onclick="applyPriceFilter()" class="btn btn-primary w-100">Apply</button>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Brands</h5>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="brand1">
-                        <label class="form-check-label" for="brand1">Apple</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="brand2">
-                        <label class="form-check-label" for="brand2">Samsung</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="brand3">
-                        <label class="form-check-label" for="brand3">Sony</label>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Products -->
-        <div class="col-lg-9">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+<!-- Review Modal -->
+<div class="modal fade modal-modern" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
                 <div>
-                    <h1 class="h3 mb-0">
-                        {% if category %}{{ category.name }}{% else %}All Products{% endif %}
-                    </h1>
-                    <p class="text-muted mb-0">
-                        {{ products.paginator.count }} products found
-                    </p>
+                    <h5 class="modal-title">Write a Review</h5>
+                    <p class="mb-0" style="opacity: 0.8; font-size: 0.9rem;">Share your experience with {{ product.name|truncatechars:40 }}</p>
                 </div>
-                
-                <div class="d-flex align-items-center">
-                    <span class="me-2">Sort by:</span>
-                    <select class="form-select w-auto" onchange="window.location.href = '?sort_by=' + this.value">
-                        <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest</option>
-                        <option value="price_low" {% if sort_by == 'price_low' %}selected{% endif %}>Price: Low to High</option>
-                        <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>Price: High to Low</option>
-                        <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>Most Popular</option>
-                        <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Highest Rated</option>
-                    </select>
-                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            
-            <div class="row">
-                {% for product in products %}
-                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-                    <div class="product-card">
-                        <div class="position-relative overflow-hidden">
-                            <img src="{{ product.primary_image_url|default:'https://via.placeholder.com/300x300' }}" 
-                                 alt="{{ product.name }}" 
-                                 class="card-img-top product-img">
-                            {% if product.discount_price %}
-                            <span class="badge badge-discount">{{ product.discount_percentage }}% OFF</span>
-                            {% endif %}
-                            
-                            <!-- CATEGORY TAG ADDED HERE -->
-                            <div class="category-tag position-absolute top-0 start-0 m-2">
-                                <span class="badge bg-info">
-                                    {{ product.category.name|default:"Uncategorized" }}
-                                </span>
-                            </div>
-                            
-                            <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" 
-                                    onclick="addToWishlist('{{ product.id }}')">
-                                <i class="far fa-heart"></i>
-                            </button>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title">{{ product.name }}</h6>
-                            <div class="rating-stars mb-2">
-                                {% for i in "12345" %}
-                                {% if forloop.counter <= product.average_rating %}
-                                <i class="fas fa-star"></i>
-                                {% else %}
+            <form id="reviewForm" method="post" action="{% url 'products:add_review' product.id %}">
+                {% csrf_token %}
+                <div class="modal-body" style="padding: 2rem;">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Your Rating *</label>
+                        <div class="rating-input" id="ratingInput">
+                            {% for i in "54321" %}
+                            <input type="radio" name="rating" id="star{{ i }}" value="{{ i }}" style="display: none;" required>
+                            <label for="star{{ i }}" class="star-label" data-value="{{ i }}" style="color: #d1d5db; font-size: 2rem; cursor: pointer;">
                                 <i class="far fa-star"></i>
-                                {% endif %}
-                                {% endfor %}
-                                <small class="text-muted">({{ product.review_count }})</small>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="invalid-feedback" id="ratingError" style="display: none;">Please select a rating</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="reviewTitle" class="form-label fw-bold">Review Title</label>
+                        <input type="text" name="title" id="reviewTitle" class="form-control" placeholder="Summarize your experience" style="border-radius: 12px; padding: 0.75rem; border: 1px solid var(--border);">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="reviewComment" class="form-label fw-bold">Your Review *</label>
+                        <textarea name="comment" id="reviewComment" class="form-control" rows="5" placeholder="What did you like or dislike about this product?" required style="border-radius: 12px; padding: 0.75rem; border: 1px solid var(--border);"></textarea>
+                        <div class="invalid-feedback" id="commentError" style="display: none;">Please write your review</div>
+                    </div>
+                    
+                    <div>
+                        <label class="form-label fw-bold">Would you recommend this product?</label>
+                        <div class="d-flex gap-3 mt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="recommend" id="recommendYes" value="yes" checked>
+                                <label class="form-check-label" for="recommendYes">Yes, I recommend</label>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    {% if product.discount_price %}
-                                    <span class="h5 text-primary">${{ product.discount_price }}</span>
-                                    <span class="text-muted text-decoration-line-through ms-2">${{ product.price }}</span>
-                                    {% else %}
-                                    <span class="h5 text-primary">${{ product.price }}</span>
-                                    {% endif %}
-                                </div>
-                                <button class="btn btn-sm btn-primary" onclick="addToCart('{{ product.id }}')">
-                                    <i class="fas fa-cart-plus"></i>
-                                </button>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="recommend" id="recommendNo" value="no">
+                                <label class="form-check-label" for="recommendNo">No, I don't recommend</label>
                             </div>
                         </div>
-                        <a href="{% url 'products:product_detail' product.slug %}" class="stretched-link"></a>
                     </div>
                 </div>
-                {% empty %}
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
-                    <h3>No products found</h3>
-                    <p class="text-muted">Try adjusting your search or filter to find what you're looking for.</p>
+                <div class="modal-footer" style="border-top: 1px solid var(--border); padding: 1rem 2rem;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 12px;">Cancel</button>
+                    <button type="submit" class="btn-add-cart" id="submitReviewBtn" style="margin: 0; padding: 0.75rem 1.5rem;">Submit Review</button>
                 </div>
-                {% endfor %}
-            </div>
-            
-            <!-- Pagination -->
-            {% if products.paginator.num_pages > 1 %}
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    {% if products.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ products.previous_page_number }}">Previous</a>
-                    </li>
-                    {% endif %}
-                    
-                    {% for num in products.paginator.page_range %}
-                    {% if products.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                    {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endif %}
-                    {% endfor %}
-                    
-                    {% if products.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ products.next_page_number }}">Next</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+            </form>
         </div>
     </div>
 </div>
-{% endblock %}
 
-
-{% block extra_css %}
-<style>
-    /* Product Card Hover Effects - FIXED */
-    .product-card {
-        border: 1px solid #e9ecef;
-        border-radius: 10px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        height: 100%;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        border-color: #6C63FF;
-    }
-    
-    .product-card .product-img {
-        height: 200px;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-        width: 100%;
-    }
-    
-    .product-card:hover .product-img {
-        transform: scale(1.05);
-    }
-    
-    .product-card .card-body {
-        padding: 1rem;
-        flex-grow: 1;
-    }
-    
-    /* Discount Badge */
-    .badge-discount {
-        position: absolute;
-        top: 10px;
-        right: 10px; /* Changed from left to right */
-        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        z-index: 2;
-    }
-    
-    /* Category Tag */
-    .category-tag {
-        z-index: 2;
-    }
-    
-    .category-tag .badge {
-        background-color: #17a2b8 !important;
-        color: white;
-        font-size: 0.7rem;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .rating-stars {
-        color: #ffc107;
-    }
-    
-    .btn-primary {
-        background-color: #6C63FF;
-        border-color: #6C63FF;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-primary:hover {
-        background-color: #5a52d4;
-        border-color: #5a52d4;
-    }
-    
-    /* Fix the stretched-link issue */
-    .product-card > .stretched-link {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        z-index: 1;
-    }
-    
-    /* Make sure buttons stay clickable */
-    .product-card button {
-        position: relative;
-        z-index: 3;
-    }
-    
-    .card-title {
-        font-size: 0.95rem;
-        line-height: 1.4;
-        margin-bottom: 0.5rem;
-        min-height: 2.8em;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .col-xl-3 {
-            flex: 0 0 50%;
-            max-width: 50%;
-        }
-        
-        .card-title {
-            font-size: 0.9rem;
-            min-height: 2.5em;
-        }
-        
-        .category-tag .badge {
-            font-size: 0.65rem;
-            padding: 3px 8px;
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .col-xl-3 {
-            flex: 0 0 100%;
-            max-width: 100%;
-        }
-    }
-</style>
-{% endblock %}
-
-
-{% block extra_js %}
 <script>
-    function applyPriceFilter() {
-        const minPrice = document.getElementById('minPrice').value;
-        const maxPrice = document.getElementById('maxPrice').value;
-        window.location.href = `?min_price=${minPrice}&max_price=${maxPrice}`;
-    }
+// Rating stars functionality
+function initializeRatingStars() {
+    const ratingContainer = document.getElementById('ratingInput');
+    if (!ratingContainer) return;
     
-    document.getElementById('minPrice').addEventListener('input', function() {
-        document.getElementById('minPriceValue').textContent = this.value;
-    });
+    const starLabels = document.querySelectorAll('.star-label');
     
-    document.getElementById('maxPrice').addEventListener('input', function() {
-        document.getElementById('maxPriceValue').textContent = this.value;
-    });
-    
-    // Helper to get CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    // Add to cart: sends JSON to cart add endpoint
-    function addToCart(productId) {
-        const addUrlTemplate = "{% url 'add_to_cart' 0 %}";
-        const url = addUrlTemplate.replace('/0/', `/${productId}/`);
-
-        fetch(url, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ quantity: 1 })
-        })
-        .then(async response => {
-            const data = await response.json().catch(() => null);
-            if (!response.ok) throw new Error((data && (data.message || data.error)) || `Request failed (${response.status})`);
-            return data;
-        })
-        .then(data => {
-            if (data && data.success) {
-                showMessage('success', data.message || 'Added to cart');
-                if (data.cart_quantity !== undefined) updateCartCount(data.cart_quantity);
+    function updateStars(ratingValue) {
+        starLabels.forEach(label => {
+            const icon = label.querySelector('i');
+            const labelValue = parseInt(label.getAttribute('data-value'));
+            
+            if (labelValue <= ratingValue) {
+                icon.className = 'fas fa-star';
+                label.style.color = '#fbbf24';
             } else {
-                showMessage('danger', (data && (data.error || data.message)) || 'Could not add to cart');
+                icon.className = 'far fa-star';
+                label.style.color = '#d1d5db';
             }
-        })
-        .catch(err => showMessage('danger', err.message || 'Network error while adding to cart'));
-    }
-
-    // Toggle wishlist (use same endpoint as category)
-    function addToWishlist(productId) {
-        const toggleUrl = `/wishlist/toggle/${productId}/`;
-        const addUrl = `/wishlist/add/${productId}/`;
-        const opts = { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' } };
-
-        fetch(toggleUrl, { ...opts, credentials: 'same-origin' })
-        .then(response => {
-            if (response.redirected || response.status === 302) {
-                showMessage('warning', 'Please log in to use wishlist');
-                throw new Error('Authentication required');
-            }
-            if (response.status === 404) return fetch(addUrl, { ...opts, credentials: 'same-origin' });
-            return response;
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.success) showMessage('success', data.message || 'Wishlist updated');
-            else showMessage('danger', (data && (data.error || data.message)) || 'Could not update wishlist');
-        })
-        .catch(err => {
-            if (err.message !== 'Authentication required') showMessage('danger', 'Could not update wishlist');
         });
     }
+    
+    starLabels.forEach(label => {
+        label.addEventListener('mouseenter', function() {
+            const ratingValue = parseInt(this.getAttribute('data-value'));
+            updateStars(ratingValue);
+        });
+        
+        label.addEventListener('click', function(e) {
+            e.preventDefault();
+            const ratingValue = parseInt(this.getAttribute('data-value'));
+            const radioInput = document.getElementById(`star${ratingValue}`);
+            if (radioInput) {
+                radioInput.checked = true;
+                updateStars(ratingValue);
+                document.getElementById('ratingError').style.display = 'none';
+            }
+        });
+    });
+    
+    ratingContainer.addEventListener('mouseleave', function() {
+        const checkedRadio = document.querySelector('#ratingInput input[name="rating"]:checked');
+        updateStars(checkedRadio ? parseInt(checkedRadio.value) : 0);
+    });
+    
+    const checkedRadio = document.querySelector('#ratingInput input[name="rating"]:checked');
+    if (checkedRadio) updateStars(parseInt(checkedRadio.value));
+}
 
-    // showMessage and updateCartCount helpers (shared with other templates)
-    function showMessage(level, text) {
-        let container = document.querySelector('.messages-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.className = 'messages-container';
-            container.style = 'position: fixed; top: 90px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;';
-            document.body.appendChild(container);
+// Review form submission
+function initializeReviewForm() {
+    const reviewForm = document.getElementById('reviewForm');
+    if (!reviewForm) return;
+    
+    reviewForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        document.getElementById('ratingError').style.display = 'none';
+        document.getElementById('commentError').style.display = 'none';
+        
+        const selectedRating = document.querySelector('#ratingInput input[name="rating"]:checked');
+        if (!selectedRating) {
+            document.getElementById('ratingError').style.display = 'block';
+            document.getElementById('ratingInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
         }
+        
+        const comment = document.getElementById('reviewComment');
+        if (!comment.value.trim()) {
+            document.getElementById('commentError').style.display = 'block';
+            comment.focus();
+            return;
+        }
+        
+        const submitBtn = document.getElementById('submitReviewBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        
+        const formData = new FormData(reviewForm);
+        
+        try {
+            const response = await fetch(reviewForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    showNotification('success', data.message || 'Review submitted successfully!');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
+                    if (modal) modal.hide();
+                    reviewForm.reset();
+                    document.querySelectorAll('#ratingInput input[name="rating"]').forEach(radio => radio.checked = false);
+                    updateStars(0);
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showNotification('error', data.error || 'Failed to submit review');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            } else {
+                const errorData = await response.json();
+                showNotification('error', errorData.error || 'Failed to submit review');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('error', 'Network error. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+}
 
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-dismissible fade show alert-${level} message-item`;
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.style = 'box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: none; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid; animation: slideInRight 0.5s ease-out;';
+// Helper function for updateStars (needed for reset)
+function updateStars(ratingValue) {
+    const starLabels = document.querySelectorAll('.star-label');
+    starLabels.forEach(label => {
+        const icon = label.querySelector('i');
+        const labelValue = parseInt(label.getAttribute('data-value'));
+        if (labelValue <= ratingValue) {
+            icon.className = 'fas fa-star';
+            label.style.color = '#fbbf24';
+        } else {
+            icon.className = 'far fa-star';
+            label.style.color = '#d1d5db';
+        }
+    });
+}
 
-        alertDiv.innerHTML = `
-            <div class="d-flex align-items-start">
-                <div class="flex-shrink-0 me-3">
-                    <i class="fas fa-bell fa-lg"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <div class="d-flex justify-content-between align-items-start mb-1">
-                        <strong class="message-title">${level.charAt(0).toUpperCase() + level.slice(1)}</strong>
-                        <button type="button" class="btn-close btn-close-custom" aria-label="Close" style="font-size: 0.7rem; padding: 0.5rem;"></button>
-                    </div>
-                    <div class="message-content" style="line-height: 1.4;">${text}</div>
-                    <div class="progress mt-2" style="height: 3px; background-color: rgba(0,0,0,0.1);">
-                        <div class="progress-bar progress-bar-${level}" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
-                    </div>
-                </div>
-            </div>`;
-
-        container.appendChild(alertDiv);
-        setTimeout(() => {
-            const pb = alertDiv.querySelector('.progress-bar');
-            if (pb) pb.style.width = '0%';
-        }, 100);
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            alertDiv.style.transform = 'translateX(100%)';
-            alertDiv.style.transition = 'all 0.5s ease';
-            setTimeout(() => alertDiv.remove(), 500);
-        }, 5000);
-    }
-
-    function updateCartCount(count) {
-        const selectors = ['#cart-count', '.cart-count', '#cartCount', '.cart-quantity', '.cart-count-badge'];
-        selectors.forEach(sel => {
-            document.querySelectorAll(sel).forEach(el => el.textContent = count);
-        });
-    }
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    initializeRatingStars();
+    initializeReviewForm();
+});
 </script>
-{% endblock %}

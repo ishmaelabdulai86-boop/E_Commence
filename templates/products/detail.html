@@ -784,8 +784,8 @@
                     {% endfor %}
                     {% endwith %}
                 </div>
-                <span class="rating-value">{{ product.average_rating|floatformat:1 }}/5.0</span>
-                <span class="review-count">({{ product.review_count }} reviews)</span>
+                <span class="rating-value">{{ product.average_rating|default:0|floatformat:1 }}/5.0</span>
+                <span class="review-count">({{ product.review_count|default:0 }} review{{ product.review_count|default:0|pluralize }})</span>
             </div>
             
             <div class="price-card">
@@ -923,7 +923,7 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="reviews-summary">
-                        <div class="average-rating">{{ product.average_rating|floatformat:1 }}</div>
+                        <div class="average-rating">{{ product.average_rating|default:0|floatformat:1 }}</div>
                         <div class="stars" style="justify-content: center; margin: 0.5rem 0;">
                             {% with rating=product.average_rating|default:0|floatformat:"0" %}
                             {% for i in "12345"|make_list %}
@@ -935,7 +935,7 @@
                             {% endfor %}
                             {% endwith %}
                         </div>
-                        <p>Based on {{ product.review_count }} reviews</p>
+                        <p>Based on {{ product.review_count|default:0 }} review{{ product.review_count|default:0|pluralize }}</p>
                         {% if user.is_authenticated %}
                         <button class="btn-add-cart" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.75rem;" data-bs-toggle="modal" data-bs-target="#reviewModal">
                             <i class="fas fa-pen"></i> Write a Review
@@ -1056,6 +1056,7 @@
 </div>
 
 <!-- Review Modal -->
+<!-- Review Modal - Updated -->
 <div class="modal fade modal-modern" id="reviewModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -1066,7 +1067,7 @@
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'products:add_review' product.id %}">
+            <form id="reviewForm" method="post" action="{% url 'products:add_review' product.id %}">
                 {% csrf_token %}
                 <div class="modal-body" style="padding: 2rem;">
                     <div class="mb-4">
@@ -1074,11 +1075,12 @@
                         <div class="rating-input">
                             {% for i in "54321" %}
                             <input type="radio" name="rating" id="star{{ i }}" value="{{ i }}" style="display: none;" required>
-                            <label for="star{{ i }}" style="color: #d1d5db; font-size: 2rem;">
+                            <label for="star{{ i }}" style="color: #d1d5db; font-size: 2rem; cursor: pointer;">
                                 <i class="far fa-star"></i>
                             </label>
                             {% endfor %}
                         </div>
+                        <div id="ratingError" class="text-danger mt-2" style="display: none; font-size: 0.875rem;">Please select a rating</div>
                     </div>
                     
                     <div class="mb-4">
@@ -1089,25 +1091,12 @@
                     <div class="mb-4">
                         <label for="reviewComment" class="form-label fw-bold">Your Review *</label>
                         <textarea name="comment" id="reviewComment" class="form-control" rows="5" placeholder="What did you like or dislike about this product?" required style="border-radius: 12px; padding: 0.75rem; border: 1px solid var(--border);"></textarea>
-                    </div>
-                    
-                    <div>
-                        <label class="form-label fw-bold">Would you recommend this product?</label>
-                        <div class="d-flex gap-3 mt-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="recommend" id="recommendYes" value="yes" checked>
-                                <label class="form-check-label" for="recommendYes">Yes, I recommend</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="recommend" id="recommendNo" value="no">
-                                <label class="form-check-label" for="recommendNo">No, I don't recommend</label>
-                            </div>
-                        </div>
+                        <div id="commentError" class="text-danger mt-2" style="display: none; font-size: 0.875rem;">Please enter your review</div>
                     </div>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid var(--border); padding: 1rem 2rem;">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 12px;">Cancel</button>
-                    <button type="submit" class="btn-add-cart" style="margin: 0; padding: 0.75rem 1.5rem;">Submit Review</button>
+                    <button type="submit" class="btn-add-cart" id="submitReviewBtn" style="margin: 0; padding: 0.75rem 1.5rem;">Submit Review</button>
                 </div>
             </form>
         </div>
@@ -1134,6 +1123,7 @@
     // Update quantity
     function updateQuantity(action) {
         const input = document.getElementById('quantity');
+        if (!input) return;
         let value = parseInt(input.value) || 1;
         const max = parseInt(input.getAttribute('max')) || 999;
         
@@ -1160,48 +1150,152 @@
     });
     
     // Rating stars interaction
-    document.querySelectorAll('.rating-input label').forEach((label, index) => {
-        label.addEventListener('mouseenter', function() {
-            const ratingValue = this.getAttribute('for').replace('star', '');
+    function setupRatingStars() {
+        const ratingContainer = document.querySelector('.rating-input');
+        if (!ratingContainer) return;
+        
+        const labels = document.querySelectorAll('.rating-input label');
+        
+        labels.forEach((label, index) => {
+            label.addEventListener('mouseenter', function() {
+                const ratingValue = this.getAttribute('for').replace('star', '');
+                const labels = document.querySelectorAll('.rating-input label');
+                
+                labels.forEach((lbl, i) => {
+                    const icon = lbl.querySelector('i');
+                    if ((5 - i) <= parseInt(ratingValue)) {
+                        icon.className = 'fas fa-star';
+                        lbl.style.color = '#fbbf24';
+                    } else {
+                        icon.className = 'far fa-star';
+                        lbl.style.color = '#d1d5db';
+                    }
+                });
+            });
+        });
+        
+        ratingContainer.addEventListener('mouseleave', function() {
+            const checked = document.querySelector('.rating-input input:checked');
             const labels = document.querySelectorAll('.rating-input label');
             
-            labels.forEach((lbl, i) => {
-                const icon = lbl.querySelector('i');
-                if ((5 - i) <= parseInt(ratingValue)) {
-                    icon.className = 'fas fa-star';
-                    lbl.style.color = '#fbbf24';
-                } else {
+            if (checked) {
+                const ratingValue = checked.value;
+                labels.forEach((lbl, i) => {
+                    const icon = lbl.querySelector('i');
+                    if ((5 - i) <= parseInt(ratingValue)) {
+                        icon.className = 'fas fa-star';
+                        lbl.style.color = '#fbbf24';
+                    } else {
+                        icon.className = 'far fa-star';
+                        lbl.style.color = '#d1d5db';
+                    }
+                });
+            } else {
+                labels.forEach(lbl => {
+                    const icon = lbl.querySelector('i');
                     icon.className = 'far fa-star';
                     lbl.style.color = '#d1d5db';
+                });
+            }
+        });
+        
+        // Click handler for rating stars
+        labels.forEach((label, index) => {
+            label.addEventListener('click', function() {
+                const ratingValue = this.getAttribute('for').replace('star', '');
+                const radio = document.getElementById(`star${ratingValue}`);
+                if (radio) {
+                    radio.checked = true;
+                    document.getElementById('ratingError').style.display = 'none';
                 }
             });
         });
-    });
+    }
     
-    document.querySelector('.rating-input').addEventListener('mouseleave', function() {
-        const checked = document.querySelector('.rating-input input:checked');
-        const labels = document.querySelectorAll('.rating-input label');
+    // Handle review form submission
+    function setupReviewForm() {
+        const reviewForm = document.getElementById('reviewForm');
+        if (!reviewForm) return;
         
-        if (checked) {
-            const ratingValue = checked.value;
-            labels.forEach((lbl, i) => {
-                const icon = lbl.querySelector('i');
-                if ((5 - i) <= parseInt(ratingValue)) {
-                    icon.className = 'fas fa-star';
-                    lbl.style.color = '#fbbf24';
+        reviewForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Clear previous errors
+            document.getElementById('ratingError').style.display = 'none';
+            document.getElementById('commentError').style.display = 'none';
+            
+            // Validate form
+            let isValid = true;
+            const rating = document.querySelector('input[name="rating"]:checked');
+            const comment = document.getElementById('reviewComment').value.trim();
+            
+            if (!rating) {
+                document.getElementById('ratingError').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!comment) {
+                document.getElementById('commentError').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!isValid) return;
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitReviewBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+            
+            // Get CSRF token
+            const csrftoken = getCookie('csrftoken');
+            
+            // Create form data
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
+                    modal.hide();
+                    
+                    // Show success message
+                    showNotification('success', data.message || 'Review submitted successfully!');
+                    
+                    // Reset form
+                    reviewForm.reset();
+                    document.querySelectorAll('.rating-input label i').forEach(icon => {
+                        icon.className = 'far fa-star';
+                    });
+                    
+                    // Reload page after 2 seconds to show new review
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
                 } else {
-                    icon.className = 'far fa-star';
-                    lbl.style.color = '#d1d5db';
+                    showNotification('error', data.message || 'Failed to submit review');
                 }
-            });
-        } else {
-            labels.forEach(lbl => {
-                const icon = lbl.querySelector('i');
-                icon.className = 'far fa-star';
-                lbl.style.color = '#d1d5db';
-            });
-        }
-    });
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('error', 'Network error. Please try again.');
+            } finally {
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
     
     // Get CSRF token
     function getCookie(name) {
@@ -1221,6 +1315,9 @@
     
     // Add to cart
     document.querySelectorAll('.btn-add-cart').forEach(btn => {
+        // Skip the submit button in modal
+        if (btn.id === 'submitReviewBtn') return;
+        
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const productId = this.dataset.productId;
@@ -1245,7 +1342,10 @@
                     showNotification('error', data.message || 'Failed to add to cart');
                 }
             })
-            .catch(error => showNotification('error', 'Network error'));
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('error', 'Network error');
+            });
         });
     });
     
@@ -1269,12 +1369,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = '{% url "orders:checkout" %}';
+                    window.location.href = '/checkout/';
                 } else {
                     showNotification('error', data.message || 'Failed to proceed');
                 }
             })
-            .catch(error => showNotification('error', 'Network error'));
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('error', 'Network error');
+            });
         });
     });
     
@@ -1303,9 +1406,14 @@
                         icon.className = 'far fa-heart';
                         showNotification('info', 'Removed from wishlist');
                     }
+                } else if (data.message === 'Please login to use wishlist') {
+                    showNotification('error', 'Please login to use wishlist');
                 }
             })
-            .catch(error => showNotification('error', 'Please login to use wishlist'));
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('error', 'Please login to use wishlist');
+            });
         });
     });
     
@@ -1363,6 +1471,12 @@
             if (el) el.textContent = count;
         });
     }
+    
+    // Initialize all functionality when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        setupRatingStars();
+        setupReviewForm();
+    });
     
     // Add animation styles
     const style = document.createElement('style');

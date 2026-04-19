@@ -316,6 +316,15 @@ def product_detail(request, product_slug):
     except Product.DoesNotExist:
         return render(request, '404.html', {'message': 'Product not found'}, status=404)
     
+    # Calculate review statistics
+    approved_reviews = product.reviews.filter(is_approved=True)
+    review_count = approved_reviews.count()
+    
+    
+    # Attach calculated values to product object
+    product.review_count = review_count
+    
+    
     # Track recently viewed
     if 'recently_viewed' in request.session:
         if product.id in request.session['recently_viewed']:
@@ -333,10 +342,14 @@ def product_detail(request, product_slug):
         is_active=True
     ).exclude(id=product.id).prefetch_related('images')[:4]
     
+    # Add review count and rating to related products
+    for related in related_products:
+        related_reviews = related.reviews.filter(is_approved=True)
+        related.review_count = related_reviews.count()
+        
+    
     # Get rating distribution
-    rating_distribution = ProductReview.objects.filter(
-        product=product
-    ).values('rating').annotate(count=Count('id')).order_by('-rating')
+    rating_distribution = approved_reviews.values('rating').annotate(count=Count('id')).order_by('-rating')
     
     # Prepare rating counts for template
     rating_counts = {i: 0 for i in range(1, 6)}
@@ -347,11 +360,11 @@ def product_detail(request, product_slug):
         'product': product,
         'related_products': related_products if related_products.exists() else [],
         'rating_counts': rating_counts,
+        'review_count': review_count,
     }
     
     return render(request, 'products/detail.html', context)
 
-# views.py
 @login_required
 @ratelimit(key='user', rate='5/m')
 def add_review(request, product_id):
@@ -362,7 +375,15 @@ def add_review(request, product_id):
         rating = request.POST.get('rating')
         comment = request.POST.get('comment')
         
+        # Check for AJAX request
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         if not rating or not comment:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False, 
+                    'message': 'Rating and comment are required.'
+                })
             messages.error(request, 'Rating and comment are required.')
             return redirect('products:product_detail', product_slug=product.slug)
         
@@ -371,6 +392,8 @@ def add_review(request, product_id):
             if rating < 1 or rating > 5:
                 raise ValueError
         except ValueError:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': 'Invalid rating value.'})
             messages.error(request, 'Invalid rating value.')
             return redirect('products:product_detail', product_slug=product.slug)
         
@@ -386,7 +409,10 @@ def add_review(request, product_id):
             existing_review.comment = comment
             existing_review.title = title
             existing_review.save()
-            messages.info(request, 'Review updated successfully.')
+            message = 'Review updated successfully.'
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': message})
+            messages.info(request, message)
         else:
             # Create new review
             ProductReview.objects.create(
@@ -397,17 +423,19 @@ def add_review(request, product_id):
                 comment=comment,
                 is_approved=True
             )
-            messages.success(request, 'Review added successfully.')
+            message = 'Review added successfully.'
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': message})
+            messages.success(request, message)
         
         # Update product rating
         update_product_rating(product)
         
-        # FIXED: Use correct URL name with namespace
+        # Redirect for non-AJAX requests
         return redirect('products:product_detail', product_slug=product.slug)
     
     # If GET request, redirect to product detail
     return redirect('products:product_detail', product_slug=product.slug)
-
 
 @login_required
 def wishlist_view(request):
@@ -589,7 +617,6 @@ def update_product_rating(product):
         product.rating = 0
         product.review_count = 0
         product.save(update_fields=['rating', 'review_count'])
-
 def get_low_stock_count():
     """Get count of products with low stock"""
     return Product.objects.filter(stock__lte=models.F('low_stock_threshold'), stock__gt=0).count()
