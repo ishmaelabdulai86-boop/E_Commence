@@ -520,7 +520,6 @@
             e.stopPropagation();
             
             const icon = this.querySelector('i');
-            const isFilled = icon.classList.contains('fas');
             const originalIconClass = icon.className;
             
             // Show loading state
@@ -539,13 +538,25 @@
                 credentials: 'same-origin'
             })
             .then(response => {
-                if (response.status === 403 || response.status === 401) {
+                // Check if response is a redirect to login
+                if (response.status === 302 || response.status === 401 || response.status === 403) {
+                    // Check if the response URL contains login
+                    if (response.url && response.url.includes('/login/')) {
+                        throw new Error('login_required');
+                    }
                     throw new Error('login_required');
                 }
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('login_required');
+                }
+                
                 return response.json();
             })
             .then(data => {
-                if (data.success) {
+                if (data && data.success) {
                     if (data.action === 'added') {
                         icon.className = 'fas fa-heart';
                         this.style.color = '#ef4444';
@@ -557,16 +568,19 @@
                     }
                 } else {
                     icon.className = originalIconClass;
-                    showToast(data.message || 'Could not update wishlist', 'error');
+                    showToast(data?.message || 'Could not update wishlist', 'error');
                 }
             })
             .catch(error => {
                 console.error('Wishlist error:', error);
                 icon.className = originalIconClass;
+                
                 if (error.message === 'login_required') {
                     showToast('Please login to use wishlist', 'warning');
+                    // Redirect to login page after a short delay
                     setTimeout(() => {
-                        window.location.href = "/users/login/?next=" + encodeURIComponent(window.location.pathname);
+                        const currentUrl = encodeURIComponent(window.location.href);
+                        window.location.href = `/users/login/?next=${currentUrl}`;
                     }, 1500);
                 } else {
                     showToast('Network error. Please try again.', 'error');
@@ -581,6 +595,13 @@
     // Check wishlist status on page load
     function checkWishlistStatus() {
         const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+        
+        // Check if user is logged in by checking if there's a user menu or using the data attribute
+        const isLoggedIn = document.body.getAttribute('data-user-logged-in') === 'true';
+        if (!isLoggedIn) {
+            console.log('User not logged in, skipping wishlist status check');
+            return;
+        }
         
         wishlistButtons.forEach(button => {
             const productId = button.getAttribute('data-product-id');
@@ -597,7 +618,7 @@
                 credentials: 'same-origin'
             })
             .then(response => {
-                if (response.status === 403 || response.status === 401) {
+                if (response.status === 302 || response.status === 401 || response.status === 403) {
                     return { in_wishlist: false };
                 }
                 return response.json();
