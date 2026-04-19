@@ -182,6 +182,11 @@ def product_list(request, category_slug=None):
         category = get_object_or_404(Category, slug=category_slug, is_active=True)
         products = products.filter(category=category)
     
+    # ANNOTATE products with review count only (no average rating)
+    products = products.annotate(
+        total_reviews=Count('reviews', filter=models.Q(reviews__is_approved=True))
+    )
+    
     # Filtering
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
@@ -209,7 +214,7 @@ def product_list(request, category_slug=None):
     elif availability == 'out_of_stock':
         products = products.filter(stock=0)
     
-    # Rating filter
+    # Rating filter - using the product's rating field
     if min_rating:
         try:
             min_rating = float(min_rating)
@@ -231,7 +236,7 @@ def product_list(request, category_slug=None):
     elif sort_by == 'popular':
         products = products.order_by('-sold_count')
     elif sort_by == 'rating':
-        products = products.order_by('-rating')
+        products = products.order_by('-rating')  # Use product's rating field
     elif sort_by == 'name':
         products = products.order_by('name')
     else:  # newest
@@ -245,6 +250,10 @@ def product_list(request, category_slug=None):
     paginator = Paginator(products, 12)
     page = request.GET.get('page')
     products = paginator.get_page(page)
+    
+    # Set the review_count for each product from annotation
+    for product in products:
+        product.review_count = getattr(product, 'total_reviews', 0)
     
     context = {
         'category': category,
@@ -411,6 +420,8 @@ def add_review(request, product_id):
             existing_review.save()
             message = 'Review updated successfully.'
             if is_ajax:
+                # Call update_product_rating here
+                update_product_rating(product)
                 return JsonResponse({'success': True, 'message': message})
             messages.info(request, message)
         else:
@@ -425,10 +436,12 @@ def add_review(request, product_id):
             )
             message = 'Review added successfully.'
             if is_ajax:
+                # Call update_product_rating here
+                update_product_rating(product)
                 return JsonResponse({'success': True, 'message': message})
             messages.success(request, message)
         
-        # Update product rating
+        # Update product rating for non-AJAX requests
         update_product_rating(product)
         
         # Redirect for non-AJAX requests
@@ -436,6 +449,7 @@ def add_review(request, product_id):
     
     # If GET request, redirect to product detail
     return redirect('products:product_detail', product_slug=product.slug)
+
 
 @login_required
 def wishlist_view(request):
@@ -604,19 +618,30 @@ def add_to_comparison(request, product_id):
 
 def update_product_rating(product):
     """Update product's average rating and review count"""
-    reviews = product.reviews.filter(is_approved=True)
+    from django.db.models import Avg
+    
+    # Get all approved reviews for this product
+    reviews = ProductReview.objects.filter(product=product, is_approved=True)
     
     if reviews.exists():
-        avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
+        # Calculate average rating
+        avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
         review_count = reviews.count()
         
+        # Update the product
         product.rating = round(avg_rating, 2)
         product.review_count = review_count
+        
+        # Force save to database
         product.save(update_fields=['rating', 'review_count'])
+        
     else:
+        # No reviews, reset to 0
         product.rating = 0
         product.review_count = 0
         product.save(update_fields=['rating', 'review_count'])
+                
+        
 def get_low_stock_count():
     """Get count of products with low stock"""
     return Product.objects.filter(stock__lte=models.F('low_stock_threshold'), stock__gt=0).count()

@@ -312,6 +312,7 @@
                             <option value="price_high" {% if sort_by == 'price_high' %}selected{% endif %}>Price: High to Low</option>
                             <option value="popular" {% if sort_by == 'popular' %}selected{% endif %}>Most Popular</option>
                             <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Highest Rated</option>
+                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name A-Z</option>
                         </select>
                     </div>
                 </div>
@@ -351,15 +352,17 @@
                                 
                                 <div class="product-rating">
                                     <div class="stars">
-                                        {% with rating=product.average_rating|default:0|floatformat:"0" %}
                                         {% for i in "12345"|make_list %}
-                                            {% if forloop.counter <= rating|add:"0" %}
-                                            <i class="fas fa-star"></i>
+                                            {% with star_number=forloop.counter %}
+                                            {% if product.rating >= star_number %}
+                                                <i class="fas fa-star"></i>
+                                            {% elif product.rating >= star_number|add:"-0.5" and product.rating < star_number %}
+                                                <i class="fas fa-star-half-alt"></i>
                                             {% else %}
-                                            <i class="far fa-star"></i>
+                                                <i class="far fa-star"></i>
                                             {% endif %}
+                                            {% endwith %}
                                         {% endfor %}
-                                        {% endwith %}
                                     </div>
                                     <span class="rating-count">({{ product.review_count|default:0 }})</span>
                                 </div>
@@ -505,7 +508,8 @@
         }, 5000);
     }
 
-    // Wishlist toggle function - USING THE CORRECT URL WITH NAMESPACE
+
+    // Wishlist toggle function - USING THE CORRECT URL
     async function toggleWishlist(productId, buttonElement) {
         if (!productId) return;
         
@@ -516,7 +520,7 @@
         icon.className = 'fas fa-spinner fa-pulse';
         buttonElement.disabled = true;
         
-        // Use the full URL with app namespace - IMPORTANT FIX
+        // Use the correct URL pattern - FIXED
         const toggleUrl = `/products/wishlist/toggle/${productId}/`;
         
         try {
@@ -534,7 +538,7 @@
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 // If redirected to login page
-                if (response.redirected || response.status === 302 || response.status === 403) {
+                if (response.redirected || response.status === 302) {
                     showToast('Please log in to use wishlist', 'warning');
                     setTimeout(() => {
                         window.location.href = "{% url 'users:login' %}?next={{ request.path }}";
