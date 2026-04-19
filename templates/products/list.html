@@ -437,11 +437,141 @@
     </div>
 </div>
 
+<!-- Replace the entire script section at the bottom of your file with this -->
+
 <script>
-    // Make sure the global addToCart function is available
-    // The addToCart function is now defined in base.html
-    
-    // Initialize buttons when DOM is ready
+    // Helper to get CSRF token
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Show toast notification
+    function showToast(message, type) {
+        let container = document.querySelector('.custom-message');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'custom-message';
+            document.body.appendChild(container);
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0 me-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} fa-lg"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <strong>${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                        <button type="button" class="btn-close btn-close-custom" aria-label="Close"></button>
+                    </div>
+                    <div class="message-content">${message}</div>
+                    <div class="progress mt-2" style="height: 3px; background-color: rgba(0,0,0,0.1);">
+                        <div class="progress-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(alertDiv);
+        
+        const closeBtn = alertDiv.querySelector('.btn-close-custom');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => alertDiv.remove());
+        }
+        
+        const progressBar = alertDiv.querySelector('.progress-bar');
+        setTimeout(() => {
+            if (progressBar) progressBar.style.width = '0%';
+        }, 100);
+        
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            alertDiv.style.transform = 'translateX(100%)';
+            alertDiv.style.transition = 'all 0.5s ease';
+            setTimeout(() => alertDiv.remove(), 500);
+        }, 5000);
+    }
+
+    // Wishlist toggle function - USING THE CORRECT URL WITH NAMESPACE
+    async function toggleWishlist(productId, buttonElement) {
+        if (!productId) return;
+        
+        const icon = buttonElement.querySelector('i');
+        const originalClass = icon.className;
+        
+        // Show loading state
+        icon.className = 'fas fa-spinner fa-pulse';
+        buttonElement.disabled = true;
+        
+        // Use the full URL with app namespace - IMPORTANT FIX
+        const toggleUrl = `/products/wishlist/toggle/${productId}/`;
+        
+        try {
+            const response = await fetch(toggleUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                // If redirected to login page
+                if (response.redirected || response.status === 302 || response.status === 403) {
+                    showToast('Please log in to use wishlist', 'warning');
+                    setTimeout(() => {
+                        window.location.href = "{% url 'users:login' %}?next={{ request.path }}";
+                    }, 1500);
+                    icon.className = originalClass;
+                    buttonElement.disabled = false;
+                    return;
+                }
+                throw new Error('Server error');
+            }
+            
+            const data = await response.json();
+            
+            if (data && data.success) {
+                if (data.action === 'added') {
+                    icon.className = 'fas fa-heart';
+                    buttonElement.style.color = '#ef4444';
+                    showToast('Added to wishlist!', 'success');
+                } else if (data.action === 'removed') {
+                    icon.className = 'far fa-heart';
+                    buttonElement.style.color = '';
+                    showToast('Removed from wishlist', 'info');
+                }
+            } else {
+                icon.className = originalClass;
+                showToast(data?.message || 'Could not update wishlist', 'danger');
+            }
+        } catch (error) {
+            console.error('Wishlist error:', error);
+            icon.className = originalClass;
+            showToast(error.message || 'Network error. Please try again.', 'danger');
+        } finally {
+            buttonElement.disabled = false;
+        }
+    }
+
+    // Initialize all buttons when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded, initializing product page buttons...');
         
@@ -464,8 +594,7 @@
                         addToCart(productId, this);
                     } else {
                         console.error('addToCart function not found!');
-                        // Fallback - show message
-                        alert('Please refresh the page and try again.');
+                        showToast('Please refresh the page and try again.', 'danger');
                     }
                 }
             });
@@ -476,97 +605,42 @@
         console.log('Found Wishlist buttons:', wishlistButtons.length);
         
         wishlistButtons.forEach(button => {
+            // Ensure product ID is set
+            let productId = button.getAttribute('data-product-id');
+            if (!productId) {
+                const card = button.closest('.product-card');
+                if (card) {
+                    const cartBtn = card.querySelector('.btn-add-to-cart');
+                    if (cartBtn && cartBtn.getAttribute('data-product-id')) {
+                        productId = cartBtn.getAttribute('data-product-id');
+                        button.setAttribute('data-product-id', productId);
+                    }
+                }
+            }
+            
+            // Remove any existing event listeners
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
             newButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                const productId = this.getAttribute('data-product-id');
-                if (productId) {
-                    toggleWishlist(productId, this);
+                const pid = this.getAttribute('data-product-id');
+                if (pid) {
+                    console.log('Toggling wishlist for product:', pid);
+                    toggleWishlist(pid, this);
+                } else {
+                    console.error('Product ID not found for wishlist button');
+                    showToast('Error: Product ID not found', 'danger');
                 }
             });
         });
     });
-    
-    // Toggle wishlist function
-    function toggleWishlist(productId, buttonElement) {
-        if (!productId) return;
-        
-        const icon = buttonElement.querySelector('i');
-        const originalClass = icon.className;
-        
-        icon.className = 'fas fa-spinner fa-spin';
-        buttonElement.disabled = true;
-        
-        fetch(`/wishlist/toggle/${productId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCSRFToken(),
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(async response => {
-            if (response.status === 302 || response.redirected) {
-                throw new Error('Please login to use wishlist');
-            }
-            const data = await response.json();
-            return data;
-        })
-        .then(data => {
-            if (data && data.success) {
-                if (data.action === 'added') {
-                    icon.className = 'fas fa-heart';
-                    showToast('Added to wishlist!', 'success');
-                } else {
-                    icon.className = 'far fa-heart';
-                    showToast('Removed from wishlist', 'info');
-                }
-            } else {
-                icon.className = originalClass;
-                showToast(data?.message || 'Could not update wishlist', 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Wishlist error:', error);
-            icon.className = originalClass;
-            showToast(error.message || 'Please login to use wishlist', 'info');
-        })
-        .finally(() => {
-            buttonElement.disabled = false;
-        });
-    }
-    
-    // Helper to get CSRF token (if not already defined in base.html)
-    if (typeof getCSRFToken !== 'function') {
-        function getCSRFToken() {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(10));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-    }
-    
-    // Helper to show toast (if not already defined in base.html)
-    if (typeof showToast !== 'function') {
-        function showToast(message, type) {
-            alert(message);
-        }
-    }
 </script>
 
+<!-- Price Range and Filter Scripts -->
 <script>
-    // Price Range Slider Sync (keep your existing filter functions)
+    // Price Range Slider Sync
     const minSlider = document.getElementById('minPrice');
     const maxSlider = document.getElementById('maxPrice');
     const minInput = document.getElementById('minPriceInput');

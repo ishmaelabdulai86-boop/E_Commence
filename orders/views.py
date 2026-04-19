@@ -387,7 +387,7 @@ def order_detail(request, order_number):
         'can_return': order.can_return,
     }
     
-    return render(request, 'orders/detail.html', context)
+    return render(request, 'orders/track.html', context)
 
 @login_required
 @ratelimit(key='user', rate='5/m')
