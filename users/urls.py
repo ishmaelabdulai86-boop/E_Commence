@@ -17,32 +17,32 @@ urlpatterns = [
     
     # Password reset using Django's built-in views (RECOMMENDED)
     path('forgot-password/', 
-         auth_views.PasswordResetView.as_view(
-             template_name='users/password_reset_form.html',
-             email_template_name='users/password_reset_email.html',
-             subject_template_name='users/password_reset_subject.txt',
-             success_url=reverse_lazy('users:password_reset_done')
-         ), 
-         name='forgot_password'),
+        auth_views.PasswordResetView.as_view(
+            template_name='users/password_reset_form.html',
+            email_template_name='users/password_reset_email.html',
+            subject_template_name='users/password_reset_subject.txt',
+            success_url=reverse_lazy('users:password_reset_done')
+        ),
+        name='forgot_password'),
     
     path('forgot-password/done/', 
-         auth_views.PasswordResetDoneView.as_view(
-             template_name='users/password_reset_done.html'
-         ), 
-         name='password_reset_done'),
+        auth_views.PasswordResetDoneView.as_view(
+        template_name='users/password_reset_done.html'
+        ),
+        name='password_reset_done'),
     
     path('reset-password/<uidb64>/<token>/', 
-         auth_views.PasswordResetConfirmView.as_view(
-             template_name='users/password_reset_confirm.html',
-             success_url=reverse_lazy('users:password_reset_complete')
-         ), 
-         name='password_reset_confirm'),
+        auth_views.PasswordResetConfirmView.as_view(
+        template_name='users/password_reset_confirm.html',
+        success_url=reverse_lazy('users:password_reset_complete')
+        ),
+        name='password_reset_confirm'),
     
     path('reset-password/complete/', 
-         auth_views.PasswordResetCompleteView.as_view(
-             template_name='users/password_reset_complete.html'
-         ), 
-         name='password_reset_complete'),
+        auth_views.PasswordResetCompleteView.as_view(
+        template_name='users/password_reset_complete.html'
+        ),
+        name='password_reset_complete'),
     
     # Admin Profile
     path('admin/profile/', views.admin_profile, name='admin_profile'),
