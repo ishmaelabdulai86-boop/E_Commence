@@ -566,7 +566,6 @@
     .btn-add-cart:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        color: white;
     }
 
     .btn-add-cart:disabled {
@@ -727,31 +726,124 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Show notification
+// Show notification using messages.html style
 function showNotification(message, type = 'success') {
+    // Create container if it doesn't exist
     let container = document.querySelector('.messages-container');
     if (!container) {
         container = document.createElement('div');
         container.className = 'messages-container';
-        container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 500px;';
+        container.style.cssText = 'position: fixed; top: 90px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;';
         document.body.appendChild(container);
     }
     
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.style.cssText = 'margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px;';
-    alertDiv.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-            <div class="flex-grow-1">${message}</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    // Create message element with the same style as messages.html
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `alert alert-dismissible fade show alert-${type} message-item`;
+    messageDiv.setAttribute('role', 'alert');
+    messageDiv.style.cssText = 'box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: none; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid; animation: slideInRight 0.5s ease-out;';
+    
+    // Set colors based on type
+    let icon, title, borderColor;
+    switch(type) {
+        case 'success':
+            icon = 'fa-check-circle';
+            title = 'Success!';
+            borderColor = '#10b981';
+            messageDiv.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+            messageDiv.style.color = '#065f46';
+            break;
+        case 'error':
+        case 'danger':
+            icon = 'fa-exclamation-triangle';
+            title = 'Error!';
+            borderColor = '#ef4444';
+            messageDiv.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+            messageDiv.style.color = '#7f1d1d';
+            type = 'danger';
+            break;
+        case 'warning':
+            icon = 'fa-exclamation-circle';
+            title = 'Warning!';
+            borderColor = '#f59e0b';
+            messageDiv.style.background = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+            messageDiv.style.color = '#78350f';
+            break;
+        case 'info':
+            icon = 'fa-info-circle';
+            title = 'Information';
+            borderColor = '#3b82f6';
+            messageDiv.style.background = 'linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)';
+            messageDiv.style.color = '#1e3a8a';
+            break;
+        default:
+            icon = 'fa-bell';
+            title = 'Notification';
+            borderColor = '#6c757d';
+            messageDiv.style.background = 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)';
+            messageDiv.style.color = '#374151';
+    }
+    
+    messageDiv.style.borderLeftColor = borderColor;
+    
+    messageDiv.innerHTML = `
+        <div class="d-flex align-items-start">
+            <div class="flex-shrink-0 me-3">
+                <i class="fas ${icon} fa-lg" style="color: ${borderColor};"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <strong class="message-title" style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${title}</strong>
+                    <button type="button" class="btn-close btn-close-custom" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.7rem; padding: 0.5rem; opacity: 0.7; transition: all 0.3s ease;"></button>
+                </div>
+                <div class="message-content" style="line-height: 1.4; font-size: 0.9rem;">${message}</div>
+                <div class="progress mt-2" style="height: 3px; background-color: rgba(0,0,0,0.1);">
+                    <div class="progress-bar progress-bar-${type}" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
+                </div>
+            </div>
         </div>
     `;
-    container.appendChild(alertDiv);
     
+    container.appendChild(messageDiv);
+    
+    // Animate progress bar
+    const progressBar = messageDiv.querySelector('.progress-bar');
     setTimeout(() => {
-        if (alertDiv.parentNode) alertDiv.remove();
-    }, 4000);
+        if (progressBar) progressBar.style.width = '0%';
+    }, 100);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.style.opacity = '0';
+            messageDiv.style.transform = 'translateX(100%)';
+            messageDiv.style.transition = 'all 0.5s ease';
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 500);
+        }
+    }, 5000);
+    
+    // Manual close
+    const closeBtn = messageDiv.querySelector('.btn-close-custom');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            messageDiv.style.opacity = '0';
+            messageDiv.style.transform = 'translateX(100%)';
+            setTimeout(() => messageDiv.remove(), 500);
+        });
+    }
+    
+    // Click to dismiss
+    messageDiv.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('btn-close-custom')) {
+            this.style.opacity = '0';
+            this.style.transform = 'translateX(100%)';
+            setTimeout(() => this.remove(), 500);
+        }
+    });
 }
 
 // Event delegation for dynamic buttons
@@ -956,5 +1048,46 @@ function updateWishlistCount() {
         }
     }
 }
+
+// Add animation styles for messages
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .message-item {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .message-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.2) !important;
+    }
+    
+    .btn-close-custom:hover {
+        opacity: 1 !important;
+        transform: scale(1.1);
+    }
+    
+    @media (max-width: 768px) {
+        .messages-container {
+            top: 80px !important;
+            right: 10px !important;
+            left: 10px !important;
+            min-width: auto !important;
+            max-width: none !important;
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}
